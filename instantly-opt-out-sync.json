@@ -1,0 +1,447 @@
+{
+  "name": "Reconcile unsubscribed contacts with the Instantly block list",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Instantly opt-out reconciliation\nConnect one HTTP Header Auth credential to all four HTTP nodes. Header: Authorization. Value: your Bearer API key stored in Credentials.\n\nPreview is the default. Both source lists exhaust cursors before planning. Set applyChanges true only after reviewing the preview. maxNewBlocks caps each run.\n\nOnly adds missing email blocks; never removes blocks or sends outreach. Existing domain blocks count as covered. Writes are individually read back. No automatic retry on ambiguous writes. See the guide.",
+        "height": 320,
+        "width": 620
+      },
+      "id": "823c3e9b-6c5c-4b93-ba90-19b62f26a03a",
+      "name": "Setup",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        0,
+        -390
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "b9bb53f0-ba05-4dcf-981a-1b86830acc6d",
+      "name": "Manual start",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "return [{json:{applyChanges:false,maxNewBlocks:25}}];"
+      },
+      "id": "f941a763-c7fe-4937-b9af-1033aa2f7951",
+      "name": "Sync settings",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        240,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.instantly.ai/api/v2/leads/list",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "pagination": {
+            "pagination": {
+              "paginationMode": "updateAParameterInEachRequest",
+              "parameters": {
+                "parameters": [
+                  {
+                    "type": "body",
+                    "name": "starting_after",
+                    "value": "={{ $response.body.next_starting_after }}"
+                  }
+                ]
+              },
+              "paginationCompleteWhen": "other",
+              "completeExpression": "={{ !$response.body.next_starting_after }}",
+              "limitPagesFetched": true,
+              "maxRequests": 100,
+              "requestInterval": 250
+            }
+          },
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "responseFormat": "json"
+            }
+          },
+          "timeout": 30000
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\"filter\": \"FILTER_VAL_UNSUBSCRIBED\", \"limit\": 100, \"distinct_contacts\": false}"
+      },
+      "id": "9438b5aa-fb70-4506-ba52-a4eb1f440e26",
+      "name": "Read all unsubscribed leads",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        480,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const pages=$input.all().map(i=>i.json);\nif(!pages.length)throw new Error('No lead pages returned.');\nif(pages.at(-1).body?.next_starting_after)throw new Error('Lead pagination limit reached. No writes allowed.');\nconst emails=new Set(),cursors=new Set();let rows=0;\nfor(const [pageIndex,p] of pages.entries()){const cursor=p.body?.next_starting_after;if(cursor!==undefined&&cursor!==null&&cursor!==''&&(typeof cursor!=='string'||!cursor.trim()))throw new Error('Malformed pagination cursor.');if(pageIndex<pages.length-1&&(cursor===undefined||cursor===null||cursor===''))throw new Error('A nonfinal page has no continuation cursor.');\n if(p.statusCode!==200||!Array.isArray(p.body?.items))throw new Error('Invalid lead response.');\n if(p.body.next_starting_after){if(cursors.has(p.body.next_starting_after))throw new Error('Repeated lead cursor.');cursors.add(p.body.next_starting_after);}\n for(const r of p.body.items){rows++;if(r.status!==-2)throw new Error('Lead filter returned a non-unsubscribed record.');const e=typeof r.email==='string'?r.email.trim().toLowerCase():'';if(!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(e))throw new Error('Unsubscribed record has invalid email. Review source before syncing.');emails.add(e);}\n}\nreturn [{json:{emails:[...emails],sourceRows:rows,sourcePages:pages.length}}];"
+      },
+      "id": "0d320d04-fe68-4a76-b1f3-b79ff2618e7b",
+      "name": "Collect unsubscribed emails",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        720,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "https://api.instantly.ai/api/v2/block-lists-entries",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "pagination": {
+            "pagination": {
+              "paginationMode": "updateAParameterInEachRequest",
+              "parameters": {
+                "parameters": [
+                  {
+                    "type": "qs",
+                    "name": "starting_after",
+                    "value": "={{ $response.body.next_starting_after }}"
+                  }
+                ]
+              },
+              "paginationCompleteWhen": "other",
+              "completeExpression": "={{ !$response.body.next_starting_after }}",
+              "limitPagesFetched": true,
+              "maxRequests": 100,
+              "requestInterval": 250
+            }
+          },
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "responseFormat": "json"
+            }
+          },
+          "timeout": 30000
+        },
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "limit",
+              "value": "100"
+            }
+          ]
+        }
+      },
+      "id": "c1fcd625-a99f-4367-918c-19cdf5aa8280",
+      "name": "Read all blocked entries",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        960,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const pages=$input.all().map(i=>i.json),source=$('Collect unsubscribed emails').first().json,cfg=$('Sync settings').first().json;\nif(typeof cfg.applyChanges!=='boolean'||!Number.isSafeInteger(cfg.maxNewBlocks)||cfg.maxNewBlocks<1||cfg.maxNewBlocks>1000)throw new Error('Invalid sync settings.');\nif(!pages.length||pages.at(-1).body?.next_starting_after)throw new Error('Block-list pagination incomplete.');\nconst blocked=new Set(),domains=new Set(),cursors=new Set();\nfor(const [pageIndex,p] of pages.entries()){const cursor=p.body?.next_starting_after;if(cursor!==undefined&&cursor!==null&&cursor!==''&&(typeof cursor!=='string'||!cursor.trim()))throw new Error('Malformed pagination cursor.');if(pageIndex<pages.length-1&&(cursor===undefined||cursor===null||cursor===''))throw new Error('A nonfinal page has no continuation cursor.');if(p.statusCode!==200||!Array.isArray(p.body?.items))throw new Error('Invalid block-list response.');if(p.body.next_starting_after){if(cursors.has(p.body.next_starting_after))throw new Error('Repeated block-list cursor.');cursors.add(p.body.next_starting_after);}for(const r of p.body.items){if(typeof r.bl_value!=='string'||!r.bl_value.trim()||typeof r.is_domain!=='boolean')throw new Error('Block entry missing value.');const v=r.bl_value.trim().toLowerCase();if(r.is_domain===true)domains.add(v);else blocked.add(v);}}\nconst missing=source.emails.filter(e=>!blocked.has(e)&&!domains.has(e.split('@')[1]));\nif(missing.length>cfg.maxNewBlocks)throw new Error('New-block limit exceeded. Review source and raise maxNewBlocks deliberately.');\nreturn [{json:{applyChanges:cfg.applyChanges,missing,sourceEmails:source.emails.length,alreadyBlocked:source.emails.length-missing.length,sourcePages:source.sourcePages,blockPages:pages.length,writeCount:0}}];"
+      },
+      "id": "b64f4223-9595-40e5-bf8f-d95f5f03ad91",
+      "name": "Plan missing blocks",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1200,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "5d3d4e35-6f7f-4b59-8781-7397a5fe98c7",
+              "leftValue": "={{ $json.applyChanges && $json.missing.length > 0 }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "dd7a39c6-857d-4889-aa7e-9fcdd15918f8",
+      "name": "Apply nonempty plan?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1440,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "return $input.first().json.missing.map(email=>({json:{email}}));"
+      },
+      "id": "7decb542-8ad8-4fd6-bc10-1ac846b7c655",
+      "name": "One email per block",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1680,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.instantly.ai/api/v2/block-lists-entries",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "timeout": 30000,
+          "batching": {
+            "batch": {
+              "batchSize": 1,
+              "batchInterval": 250
+            }
+          }
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({bl_value:$json.email}) }}"
+      },
+      "id": "aff0ff48-60ed-4a5c-8fc7-060c33c00b11",
+      "name": "Create missing blocks",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1920,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const wanted=new Set($('Plan missing blocks').first().json.missing),seen=new Set(),ids=new Set();\nconst out=$input.all().map(i=>{const r=i.json,email=typeof r.bl_value==='string'?r.bl_value.trim().toLowerCase():'';if(typeof r.id!=='string'||!/^[A-Za-z0-9-]+$/.test(r.id)||!wanted.has(email)||r.is_domain!==false||seen.has(email)||ids.has(r.id))throw new Error('Create response did not match the planned email. Read the block list before retrying.');seen.add(email);ids.add(r.id);return {json:{id:r.id,email}};});\nif(seen.size!==wanted.size)throw new Error('Create responses are incomplete. Check provider before retrying.');return out;"
+      },
+      "id": "ce087e47-243c-4b15-80d0-259b823abbde",
+      "name": "Validate created blocks",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2160,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{ 'https://api.instantly.ai/api/v2/block-lists-entries/' + $json.id }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "id": "1b257505-3e53-4869-8fda-855790a762f4",
+      "name": "Read back exact blocks",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2400,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const plan=$('Plan missing blocks').first().json,created=$('Validate created blocks').all().map(i=>i.json);\nif(created.length!==plan.missing.length)throw new Error('Created block count does not match the plan.');\nconst expected=new Map(created.map(r=>[r.id,r.email])),wanted=new Set(plan.missing),seen=new Set();\nif(expected.size!==created.length||new Set(created.map(r=>r.email)).size!==wanted.size||created.some(r=>!wanted.has(r.email)))throw new Error('Created block identities are not one-to-one with the plan.');\nfor(const i of $input.all()){const r=i.json,e=typeof r.bl_value==='string'?r.bl_value.trim().toLowerCase():'';if(!expected.has(r.id)||expected.get(r.id)!==e||r.is_domain!==false||seen.has(r.id))throw new Error('Block-list readback mismatch.');seen.add(r.id);}\nif(seen.size!==wanted.size)throw new Error('Block-list readback incomplete.');\nreturn [{json:{sourceEmails:plan.sourceEmails,alreadyBlocked:plan.alreadyBlocked,writeCount:seen.size,verified:true,mode:'applied'}}];"
+      },
+      "id": "6cd19194-d73c-492c-9d19-213493d0e943",
+      "name": "Verified sync result",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2640,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const p=$input.first().json;return [{json:{mode:p.applyChanges?'nothing_to_add':'preview',missing:p.missing,sourceEmails:p.sourceEmails,alreadyBlocked:p.alreadyBlocked,writeCount:0,verified:false}}];"
+      },
+      "id": "6407e8d9-1062-4cb2-a0d8-588d802521f2",
+      "name": "Preview or no changes",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1680,
+        0
+      ]
+    }
+  ],
+  "connections": {
+    "Manual start": {
+      "main": [
+        [
+          {
+            "node": "Sync settings",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sync settings": {
+      "main": [
+        [
+          {
+            "node": "Read all unsubscribed leads",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read all unsubscribed leads": {
+      "main": [
+        [
+          {
+            "node": "Collect unsubscribed emails",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Collect unsubscribed emails": {
+      "main": [
+        [
+          {
+            "node": "Read all blocked entries",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read all blocked entries": {
+      "main": [
+        [
+          {
+            "node": "Plan missing blocks",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Plan missing blocks": {
+      "main": [
+        [
+          {
+            "node": "Apply nonempty plan?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "One email per block": {
+      "main": [
+        [
+          {
+            "node": "Create missing blocks",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create missing blocks": {
+      "main": [
+        [
+          {
+            "node": "Validate created blocks",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate created blocks": {
+      "main": [
+        [
+          {
+            "node": "Read back exact blocks",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read back exact blocks": {
+      "main": [
+        [
+          {
+            "node": "Verified sync result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Apply nonempty plan?": {
+      "main": [
+        [
+          {
+            "node": "One email per block",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Preview or no changes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "saveDataErrorExecution": "none",
+    "saveDataSuccessExecution": "none",
+    "saveManualExecutions": false
+  }
+}

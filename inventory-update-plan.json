@@ -1,0 +1,140 @@
+{
+  "name": "Compare inventory snapshots and build a safe update CSV",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Inventory update plan\nA complete snapshot comparison, with no store writes.\n\nReplace Example snapshots with complete normalized warehouse and catalog snapshots. Approve exact SKUs, set safety stock and a maximum change.\n\nDuplicate SKUs, invalid quantities and incomplete snapshots stop the run. Missing, untracked and unapproved products go to review.\n\nOutput includes a CSV plan, review queue and counts. Run synthetic examples first. See the matching Markdown guide.",
+        "height": 320,
+        "width": 620
+      },
+      "id": "52eba295-0b87-4818-b2e8-6cdfa24a4b3a",
+      "name": "Setup",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        0,
+        -390
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "f82902fe-ac2d-4587-ad65-cf68449ea4ac",
+      "name": "Manual start",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "return [{json:{\n  sourceSnapshotComplete: true,\n  catalogSnapshotComplete: true,\n  safetyStock: 2,\n  maxAbsoluteChange: 100,\n  approvedSkus: ['SKU-A', 'SKU-B'],\n  warehouse: [{sku:'SKU-A', available:12},{sku:'SKU-B',available:1}],\n  catalog: [{id:'demo-a',sku:'SKU-A',inventory:5,tracked:true},{id:'demo-b',sku:'SKU-B',inventory:0,tracked:true}]\n}}];"
+      },
+      "id": "1e078fef-f0d4-4d2c-906c-237873220f52",
+      "name": "Example snapshots",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        240,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const x=$input.first().json;\nif(x.sourceSnapshotComplete!==true || x.catalogSnapshotComplete!==true) throw new Error('Both snapshots must be complete before comparison.');\nif(!Array.isArray(x.warehouse)||!Array.isArray(x.catalog)||!Array.isArray(x.approvedSkus)) throw new Error('warehouse, catalog and approvedSkus must be arrays.');\nif(x.warehouse.length>10000 || x.catalog.length>10000) throw new Error('This template supports at most 10000 rows per snapshot.');\nif(!Number.isSafeInteger(x.safetyStock)||x.safetyStock<0||!Number.isSafeInteger(x.maxAbsoluteChange)||x.maxAbsoluteChange<0) throw new Error('Safety stock and change limit must be nonnegative integers.');\nconst sku=v=>{if(typeof v!=='string'||!v.trim()||v.length>128||/[\\r\\n\\t]/.test(v))throw new Error('Invalid SKU.');return v.trim();};\nconst seenSource=new Set(),seenCatalog=new Set(),seenIds=new Set();\nconst warehouse=x.warehouse.map(r=>{const s=sku(r.sku);if(seenSource.has(s))throw new Error('Duplicate source SKU. Aggregate warehouse locations before this step.');seenSource.add(s);if(!Number.isSafeInteger(r.available)||r.available<0)throw new Error('Available quantity must be a nonnegative integer.');return {sku:s,available:r.available};});\nconst catalog=x.catalog.map(r=>{const s=sku(r.sku);if(seenCatalog.has(s))throw new Error('Duplicate catalog SKU. Use one distinct variant per row.');seenCatalog.add(s);if(typeof r.id!=='string'||!r.id.trim()||seenIds.has(r.id)||/[\\r\\n\\t]/.test(r.id))throw new Error('Catalog IDs must be distinct nonempty strings.');seenIds.add(r.id);if(!Number.isSafeInteger(r.inventory)||r.inventory<0||typeof r.tracked!=='boolean')throw new Error('Catalog inventory and tracked flag are invalid.');return {id:r.id,sku:s,inventory:r.inventory,tracked:r.tracked};});\nreturn [{json:{warehouse,catalog,approvedSkus:[...new Set(x.approvedSkus.map(sku))],safetyStock:x.safetyStock,maxAbsoluteChange:x.maxAbsoluteChange}}];"
+      },
+      "id": "6d787170-9d7f-4755-a8bb-450af3c6ec4e",
+      "name": "Validate snapshots",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        480,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const x=$input.first().json,source=new Map(x.warehouse.map(r=>[r.sku,r.available])),approved=new Set(x.approvedSkus);\nconst updates=[],review=[],unchanged=[];\nfor(const r of x.catalog){\n if(!source.has(r.sku)){review.push({sku:r.sku,reason:'missing_source'});continue;}\n if(!r.tracked){review.push({sku:r.sku,reason:'inventory_not_tracked'});continue;}\n const quantity=Math.max(0,source.get(r.sku)-x.safetyStock),delta=quantity-r.inventory;\n if(delta===0){unchanged.push(r.sku);continue;}\n if(!approved.has(r.sku)){review.push({sku:r.sku,reason:'sku_not_approved',proposedQuantity:quantity});continue;}\n if(Math.abs(delta)>x.maxAbsoluteChange){review.push({sku:r.sku,reason:'change_limit_exceeded',proposedQuantity:quantity});continue;}\n updates.push({id:r.id,sku:r.sku,previousQuantity:r.inventory,quantity,delta});\n}\nconst catalogSkus=new Set(x.catalog.map(r=>r.sku));\nfor(const r of x.warehouse)if(!catalogSkus.has(r.sku))review.push({sku:r.sku,reason:'missing_catalog'});\nreturn [{json:{updates,review,unchanged,summary:{updates:updates.length,review:review.length,unchanged:unchanged.length},applied:false}}];"
+      },
+      "id": "b3aee7cc-47e6-4def-8a3f-c1d81b4c0c14",
+      "name": "Build update plan",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        720,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const x=$input.first().json;\nconst cell=v=>{let s=String(v);if(typeof v==='string' && /^[=+@-]/.test(s.replace(/^[\\s\\u0000-\\u001f\\u007f]*/,'')))s=\"'\"+s;return '\"'+s.replace(/\"/g,'\"\"')+'\"';};\nconst lines=[['id','sku','previous_quantity','quantity','delta'].join(',')];\nfor(const r of x.updates)lines.push([r.id,r.sku,r.previousQuantity,r.quantity,r.delta].map(cell).join(','));\nreturn [{json:{...x,fileName:'inventory-update-plan.csv',csv:lines.join('\\r\\n')+'\\r\\n',nextAction:'Review the plan. Re-read current quantities before applying updates through your store integration.'}}];"
+      },
+      "id": "c5954283-6fcd-4bf8-a494-f65200b7b044",
+      "name": "Export reviewable CSV",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        960,
+        0
+      ]
+    }
+  ],
+  "connections": {
+    "Manual start": {
+      "main": [
+        [
+          {
+            "node": "Example snapshots",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Example snapshots": {
+      "main": [
+        [
+          {
+            "node": "Validate snapshots",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate snapshots": {
+      "main": [
+        [
+          {
+            "node": "Build update plan",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build update plan": {
+      "main": [
+        [
+          {
+            "node": "Export reviewable CSV",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "saveDataErrorExecution": "none",
+    "saveDataSuccessExecution": "none",
+    "saveManualExecutions": false
+  }
+}

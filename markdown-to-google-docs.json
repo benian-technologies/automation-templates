@@ -1,0 +1,280 @@
+{
+  "name": "Create a formatted Google Doc from Markdown",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Markdown to Google Docs\nConnect the same Google Drive OAuth2 credential to Create Google Doc and Read back Google Doc. Enable the Drive API.\n\nEdit the example title and Markdown; optionally set a destination folder ID. Set createDocument to true when ready.\n\nCreates one new document per manual run. A timeout may still create a document, so check Drive before retrying. Readback verifies file identity and type, not visual rendering. See the matching guide.",
+        "height": 320,
+        "width": 620
+      },
+      "id": "ddf65727-a789-4910-96ec-cc6605c5191d",
+      "name": "Setup",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        0,
+        -390
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "49927dc3-1cdd-4db1-ac62-f731af9e0d04",
+      "name": "Manual start",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "return [{json:{\n createDocument:false,\n title:'Project kickoff brief',\n markdown:'# Project kickoff\\n\\n## Objectives\\n\\n- Confirm responsibilities\\n- Agree on the next milestone\\n\\n**Owner:** Project team',\n parentFolderId:''\n}}];"
+      },
+      "id": "83da60bf-7115-407b-97d9-ec1237f0d6ad",
+      "name": "Document input",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        240,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const x=$input.first().json;\nif(x.createDocument!==true)throw new Error('Set createDocument to true after connecting your Google Drive credential.');\nif(typeof x.title!=='string'||!x.title.trim()||x.title.length>200)throw new Error('Use a nonempty title up to 200 characters.');\nif(typeof x.markdown!=='string'||!x.markdown.trim()||x.markdown.length>500000)throw new Error('Use nonempty Markdown up to 500000 characters.');\nif(typeof x.parentFolderId!=='string'||(x.parentFolderId && !/^[A-Za-z0-9_-]+$/.test(x.parentFolderId)))throw new Error('Invalid parent folder ID.');\nreturn [{json:{title:x.title.trim(),markdown:x.markdown,parentFolderId:x.parentFolderId}}];"
+      },
+      "id": "716ea7d8-566f-4474-a7f6-3ffa4d54f0e7",
+      "name": "Validate document",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        480,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "markdownToHtml",
+        "markdown": "={{ $json.markdown }}",
+        "destinationKey": "html",
+        "options": {
+          "tables": true
+        }
+      },
+      "id": "6b0c1de9-b397-40c4-a478-b180d988e6b8",
+      "name": "Markdown to HTML",
+      "type": "n8n-nodes-base.markdown",
+      "typeVersion": 1,
+      "position": [
+        720,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const x=$input.first().json;\nif(typeof x.html!=='string'||!x.html.trim())throw new Error('Markdown conversion returned no HTML.');\nconst origin=$('Validate document').first().json;\nconst metadata={name:origin.title,mimeType:'application/vnd.google-apps.document'};\nif(origin.parentFolderId)metadata.parents=[origin.parentFolderId];\nconst boundary='n8n_document_boundary_2026';\nif(x.html.includes(boundary)||JSON.stringify(metadata).includes(boundary))throw new Error('Document conflicts with MIME boundary.');\nconst body='--'+boundary+'\\r\\nContent-Type: application/json; charset=UTF-8\\r\\n\\r\\n'+JSON.stringify(metadata)+'\\r\\n--'+boundary+'\\r\\nContent-Type: text/html; charset=UTF-8\\r\\n\\r\\n'+x.html+'\\r\\n--'+boundary+'--\\r\\n';\nreturn [{json:{body,contentType:'multipart/related; boundary='+boundary}}];"
+      },
+      "id": "0c1e62ff-2324-4954-8266-1e19c92536ae",
+      "name": "Prepare multipart upload",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        960,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://www.googleapis.com/upload/drive/v3/files",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleDriveOAuth2Api",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "uploadType",
+              "value": "multipart"
+            },
+            {
+              "name": "fields",
+              "value": "id,name,mimeType,webViewLink"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "={{ $json.contentType }}",
+        "body": "={{ $json.body }}",
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "id": "229ceb1f-a5be-4d6c-9962-ac8a0ea9ef8e",
+      "name": "Create Google Doc",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1200,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const x=$input.first().json;\nif(typeof x.id!=='string'||!/^[A-Za-z0-9_-]+$/.test(x.id))throw new Error('Google did not return a document ID. Check Drive before retrying.');\nreturn [{json:{id:x.id}}];"
+      },
+      "id": "a929c0ce-5e72-4e7c-8c6e-e10c767a6903",
+      "name": "Validate created document",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1440,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{ 'https://www.googleapis.com/drive/v3/files/' + $json.id }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleDriveOAuth2Api",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "fields",
+              "value": "id,name,mimeType,trashed"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "id": "3fc448c5-bb1a-41df-a1c2-5eb6728043c1",
+      "name": "Read back Google Doc",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1680,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const x=$input.first().json,expected=$('Validate created document').first().json.id;\nif(x.id!==expected||x.mimeType!=='application/vnd.google-apps.document'||x.trashed!==false)throw new Error('Document readback did not match the created Google Doc.');\nreturn [{json:{documentId:x.id,title:x.name,url:'https://docs.google.com/document/d/'+x.id+'/edit',metadataVerified:true,contentRenderingVerified:false}}];"
+      },
+      "id": "bc8c0564-57b0-4b55-95f1-3a2b41a99ff8",
+      "name": "Return document link",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1920,
+        0
+      ]
+    }
+  ],
+  "connections": {
+    "Manual start": {
+      "main": [
+        [
+          {
+            "node": "Document input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Document input": {
+      "main": [
+        [
+          {
+            "node": "Validate document",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate document": {
+      "main": [
+        [
+          {
+            "node": "Markdown to HTML",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Markdown to HTML": {
+      "main": [
+        [
+          {
+            "node": "Prepare multipart upload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare multipart upload": {
+      "main": [
+        [
+          {
+            "node": "Create Google Doc",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Google Doc": {
+      "main": [
+        [
+          {
+            "node": "Validate created document",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate created document": {
+      "main": [
+        [
+          {
+            "node": "Read back Google Doc",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read back Google Doc": {
+      "main": [
+        [
+          {
+            "node": "Return document link",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "saveDataErrorExecution": "none",
+    "saveDataSuccessExecution": "none",
+    "saveManualExecutions": false
+  }
+}

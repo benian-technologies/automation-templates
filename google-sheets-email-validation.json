@@ -1,0 +1,219 @@
+{
+  "name": "Validate Google Sheets email addresses with ZeroBounce",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Google Sheets email validation\nConnect Google Sheets OAuth2 to the read node. Connect HTTP Query Auth to ZeroBounce with parameter name api_key; keep the value inside n8n Credentials.\n\nSet spreadsheet ID, a bounded range beginning with an email header, and a maximum of 100 unique addresses. Blank rows are skipped and duplicates are validated once.\n\nZeroBounce requires credits. This produces a report, does not send messages or change the sheet, and does not establish consent. See the guide.",
+        "height": 320,
+        "width": 620
+      },
+      "id": "dfb71a34-edc5-443f-a953-26072e309c95",
+      "name": "Setup",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        0,
+        -390
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "e0fd44a6-5fee-4f9b-a19c-18167aa1dd7b",
+      "name": "Manual start",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "return [{json:{spreadsheetId:'YOUR_SPREADSHEET_ID',range:'Contacts!A1:A1000',maxUniqueEmails:100}}];"
+      },
+      "id": "e2f8a8d2-5752-4c7d-8a6e-bd542abdadc5",
+      "name": "Sheet settings",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        240,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{ 'https://sheets.googleapis.com/v4/spreadsheets/' + $json.spreadsheetId + '/values/' + encodeURIComponent($json.range) }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleSheetsOAuth2Api",
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "id": "1f71a063-d8c3-4889-9f92-8b77925db2e5",
+      "name": "Read selected sheet range",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        720,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const rows=$input.first().json.values,cfg=$('Sheet settings').first().json;\nif(!Array.isArray(rows)||!Array.isArray(rows[0]))throw new Error('Sheet returned no header row.');\nconst header=rows[0].map(x=>String(x).trim().toLowerCase()),cols=header.map((x,i)=>x==='email'?i:-1).filter(x=>x>=0);\nif(cols.length!==1)throw new Error('The source range must have exactly one email header.');\nconst emails=new Set();\nfor(const row of rows.slice(1)){const raw=row[cols[0]];if(raw===undefined||String(raw).trim()==='')continue;const email=String(raw).trim().toLowerCase();if(!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email)||email.length>254)throw new Error('A nonempty row contains an invalid email format. Correct the source before paid validation.');emails.add(email);}\nif(emails.size>cfg.maxUniqueEmails)throw new Error('Unique email limit exceeded before validation requests. Narrow the source range.');\nif(emails.size===0)throw new Error('No emails to validate.');\nreturn [...emails].map(email=>({json:{email}}));"
+      },
+      "id": "90b0906a-ef9e-48de-9422-ba23479a319b",
+      "name": "Normalize email rows",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        960,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "https://api.zerobounce.net/v2/validate",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpQueryAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "email",
+              "value": "={{ $json.email }}"
+            },
+            {
+              "name": "timeout",
+              "value": "30"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 45000,
+          "batching": {
+            "batch": {
+              "batchSize": 1,
+              "batchInterval": 250
+            }
+          }
+        }
+      },
+      "id": "54a0d9bd-6347-4c5d-be30-28ade7b702dd",
+      "name": "Validate with ZeroBounce",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1200,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const expected=new Set($('Normalize email rows').all().map(i=>i.json.email)),seen=new Set(),results=[];\nconst allowed=new Set(['valid','invalid','catch-all','unknown','spamtrap','abuse','do_not_mail']);\nfor(const i of $input.all()){const r=i.json,email=typeof r.address==='string'?r.address.trim().toLowerCase():'';if(r.error||!expected.has(email)||seen.has(email)||!allowed.has(r.status))throw new Error('Validation response is missing, duplicated, unexpected or an error. No report is marked complete.');seen.add(email);results.push({email,status:r.status,subStatus:typeof r.sub_status==='string'?r.sub_status:'',needsReview:r.status!=='valid'});}\nif(seen.size!==expected.size)throw new Error('Not all requested addresses have results.');\nconst cell=v=>{let s=String(v);if(/^[=+@-]/.test(s.replace(/^[\\s\\u0000-\\u001f\\u007f]*/,'')))s=\"'\"+s;return '\"'+s.replace(/\"/g,'\"\"')+'\"';};\nconst csv=['email,status,sub_status,needs_review',...results.map(r=>[r.email,r.status,r.subStatus,r.needsReview].map(cell).join(','))].join('\\r\\n')+'\\r\\n';\nreturn [{json:{complete:true,checked:results.length,needsReview:results.filter(r=>r.needsReview).length,results,csv,fileName:'email-validation-report.csv',consentVerified:false}}];"
+      },
+      "id": "168ad8ac-a445-4f1e-ac38-5ddb17f5d392",
+      "name": "Build validation report",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1440,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const settings=$input.first().json;\nif(settings.spreadsheetId==='YOUR_SPREADSHEET_ID'||typeof settings.spreadsheetId!=='string'||!/^[A-Za-z0-9_-]+$/.test(settings.spreadsheetId))throw new Error('Set your Google spreadsheet ID.');\nif(typeof settings.range!=='string'||settings.range.length>150)throw new Error('Set an explicit bounded A1 range.');\nconst m=settings.range.match(/^(?:'[^']+'|[A-Za-z0-9_ -]+)!([A-Z]+)([1-9][0-9]*):([A-Z]+)([1-9][0-9]*)$/);\nif(!m)throw new Error('Use Sheet!A1:B100 syntax with explicit start and end cells.');\nconst col=s=>[...s].reduce((n,c)=>n*26+c.charCodeAt(0)-64,0);\nconst firstCol=col(m[1]),lastCol=col(m[3]),firstRow=Number(m[2]),lastRow=Number(m[4]);\nif(![firstCol,lastCol,firstRow,lastRow].every(Number.isSafeInteger)||firstCol>lastCol||firstRow>lastRow||lastRow-firstRow+1>1000||lastCol-firstCol+1>26||lastCol>18278||lastRow>10000000)throw new Error('Use a range of at most 1000 rows and 26 columns within Sheets bounds.');\nif(!Number.isSafeInteger(settings.maxUniqueEmails)||settings.maxUniqueEmails<1||settings.maxUniqueEmails>100)throw new Error('maxUniqueEmails must be between 1 and 100.');\nreturn [{json:{spreadsheetId:settings.spreadsheetId,range:settings.range,maxUniqueEmails:settings.maxUniqueEmails}}];"
+      },
+      "id": "f117d15b-bf75-4764-8537-7580d933ffe0",
+      "name": "Validate sheet settings",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        480,
+        0
+      ]
+    }
+  ],
+  "connections": {
+    "Manual start": {
+      "main": [
+        [
+          {
+            "node": "Sheet settings",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sheet settings": {
+      "main": [
+        [
+          {
+            "node": "Validate sheet settings",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read selected sheet range": {
+      "main": [
+        [
+          {
+            "node": "Normalize email rows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize email rows": {
+      "main": [
+        [
+          {
+            "node": "Validate with ZeroBounce",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate with ZeroBounce": {
+      "main": [
+        [
+          {
+            "node": "Build validation report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate sheet settings": {
+      "main": [
+        [
+          {
+            "node": "Read selected sheet range",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "saveDataErrorExecution": "none",
+    "saveDataSuccessExecution": "none",
+    "saveManualExecutions": false
+  }
+}

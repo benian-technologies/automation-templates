@@ -1,0 +1,124 @@
+{
+  "name": "Check business hours for an AI receptionist",
+  "nodes": [
+    {
+      "name": "Setup Instructions",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        0,
+        -510
+      ],
+      "parameters": {
+        "content": "## Check business hours for an AI receptionist\n\nReturn the current local office status from a configurable weekly schedule, date closures and overnight hours.\n\nServices: n8n.\n\nSetup:\n1. Choose a Webhook Header Auth credential and set a unique path.\n2. In Configure Office, replace YOUR_TIME_ZONE with an IANA time zone and replace the sample schedule with the actual hours.\n3. Add closed dates in YYYY-MM-DD format. Empty days are closed.\n4. Send an authenticated POST with an empty JSON object to the test webhook and verify open, closed, overnight and closure cases.\n\nKeep this workflow inactive until configured and tested.",
+        "width": 720,
+        "height": 440
+      },
+      "id": "template-node-1"
+    },
+    {
+      "name": "Receive Request",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "template-office-hours-status",
+        "authentication": "headerAuth",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "webhookId": "template-office-hours-status-entry",
+      "id": "template-node-2"
+    },
+    {
+      "name": "Configure Office",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        240,
+        0
+      ],
+      "parameters": {
+        "jsCode": "const office = {\n  time_zone: 'YOUR_TIME_ZONE',\n  weekly_hours: { Monday: [['09:00','17:00']], Tuesday: [['09:00','17:00']], Wednesday: [['09:00','17:00']], Thursday: [['09:00','17:00']], Friday: [['09:00','17:00']], Saturday: [], Sunday: [] },\n  closed_dates: []\n};\nreturn [{ json: office }];"
+      },
+      "id": "template-node-3"
+    },
+    {
+      "name": "Compute Office Status",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        480,
+        0
+      ],
+      "parameters": {
+        "jsCode": "const c = $input.first().json;\nconst clock = new Date();\nconst weekdays = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];\nconst minuteOf = text => {\n  if (!/^(?:[01]\\d|2[0-3]):[0-5]\\d$/.test(text)) throw new Error('Hours must use HH:MM');\n  const [h,m] = text.split(':').map(Number); return h*60+m;\n};\nif (c.time_zone === 'YOUR_TIME_ZONE') throw new Error('Configure the office time zone');\nconst f = new Intl.DateTimeFormat('en-US', { timeZone: c.time_zone, weekday:'long', year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit', hourCycle:'h23' });\nconst p = Object.fromEntries(f.formatToParts(clock).map(part => [part.type, part.value]));\nconst date = [p.year,p.month,p.day].join('-');\nconst nowMinute = Number(p.hour)*60+Number(p.minute);\nconst today = c.weekly_hours[p.weekday] || [];\nconst previousDay = weekdays[(weekdays.indexOf(p.weekday)+6)%7];\nconst previousDateObject = new Date(Date.UTC(Number(p.year),Number(p.month)-1,Number(p.day)-1));\nconst previousDate = previousDateObject.toISOString().slice(0,10);\nconst closures = Array.isArray(c.closed_dates) ? c.closed_dates : [];\nfor (const day of weekdays) for (const pair of c.weekly_hours[day] || []) {\n  if (!Array.isArray(pair) || pair.length !== 2 || minuteOf(pair[0]) === minuteOf(pair[1])) throw new Error('Each interval needs distinct start and end times');\n}\nconst openToday = today.some(([a,b]) => { const start=minuteOf(a), end=minuteOf(b); return end>start ? nowMinute>=start && nowMinute<end : nowMinute>=start; });\nconst openOvernight = !closures.includes(previousDate) && (c.weekly_hours[previousDay] || []).some(([a,b]) => minuteOf(b)<minuteOf(a) && nowMinute<minuteOf(b));\nconst open = !closures.includes(date) && (openToday || openOvernight);\nreturn [{ json: { status: open ? 'open' : 'closed', office_is_open: open, local_date: date, local_day: p.weekday, local_time: p.hour+':'+p.minute, time_zone: c.time_zone, today_hours: today, closed_date: closures.includes(date) } }];"
+      },
+      "id": "template-node-4"
+    },
+    {
+      "name": "Return Status",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        720,
+        0
+      ],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "id": "template-node-5"
+    }
+  ],
+  "connections": {
+    "Receive Request": {
+      "main": [
+        [
+          {
+            "node": "Configure Office",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Configure Office": {
+      "main": [
+        [
+          {
+            "node": "Compute Office Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Compute Office Status": {
+      "main": [
+        [
+          {
+            "node": "Return Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "UTC",
+    "saveDataSuccessExecution": "none",
+    "saveDataErrorExecution": "none",
+    "saveManualExecutions": false
+  },
+  "active": false
+}

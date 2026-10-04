@@ -1,0 +1,258 @@
+{
+  "name": "Email staff when a caller requests a callback",
+  "nodes": [
+    {
+      "name": "Setup Instructions",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        0,
+        -510
+      ],
+      "parameters": {
+        "content": "## Email staff when a caller requests a callback\n\nValidate an inbound callback request, send a plain text email to a configured staff inbox and acknowledge provider acceptance.\n\nServices: n8n and Gmail.\n\nSetup:\n1. Choose a Webhook Header Auth credential and set a unique path.\n2. Choose a Gmail OAuth credential on Send Staff Email and replace YOUR_STAFF_EMAIL with the receiving staff inbox.\n3. Send name, phone and message in the authenticated JSON request body. Use a dedicated test inbox for the initial test.\n4. Check that the staff inbox actually receives the message before activation. Reconcile an uncertain send before retrying.\n\nKeep this workflow inactive until configured and tested.",
+        "width": 720,
+        "height": 440
+      },
+      "id": "template-node-1"
+    },
+    {
+      "name": "Receive Request",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "template-callback-notification",
+        "authentication": "headerAuth",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "webhookId": "template-callback-notification-entry",
+      "id": "template-node-2"
+    },
+    {
+      "name": "Validate Request",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        240,
+        0
+      ],
+      "parameters": {
+        "jsCode": "const b = $input.first().json.body || {};\nconst name = typeof b.name === 'string' ? b.name.trim() : '';\nconst phone = typeof b.phone === 'string' ? b.phone.trim() : '';\nconst message = typeof b.message === 'string' ? b.message.trim() : '';\nconst errors = [];\nif (!name || name.length > 120) errors.push('name is required and must be at most 120 characters');\nif (!/^[+() .0-9-]+$/.test(phone) || phone.replace(/\\D/g,'').length < 7 || phone.replace(/\\D/g,'').length > 15) errors.push('phone must contain 7 to 15 digits');\nif (!message || message.length > 2000) errors.push('message is required and must be at most 2000 characters');\nreturn [{ json: { valid: errors.length===0, errors, staff_message: ['Callback request','Name: '+name,'Phone: '+phone,'Message: '+message].join('\\n') } }];"
+      },
+      "id": "template-node-3"
+    },
+    {
+      "name": "Request Is Valid",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        480,
+        0
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "condition-valid",
+              "leftValue": "={{ $json.valid }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "template-node-4"
+    },
+    {
+      "name": "Send Staff Email",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        720,
+        0
+      ],
+      "parameters": {
+        "resource": "message",
+        "operation": "send",
+        "sendTo": "YOUR_STAFF_EMAIL",
+        "subject": "New callback request",
+        "emailType": "text",
+        "message": "={{ $('Validate Request').first().json.staff_message }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "onError": "continueErrorOutput",
+      "id": "template-node-5"
+    },
+    {
+      "name": "Confirm Mail Acceptance",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        960,
+        0
+      ],
+      "parameters": {
+        "jsCode": "if (typeof $json.id !== 'string' || !$json.id.trim()) throw new Error('Mail acceptance was not confirmed');\nreturn [{ json: { status: 'accepted_by_mail_provider' } }];"
+      },
+      "id": "template-node-6",
+      "onError": "continueErrorOutput"
+    },
+    {
+      "name": "Return Acceptance",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        1200,
+        0
+      ],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {
+          "responseCode": 202
+        }
+      },
+      "id": "template-node-7"
+    },
+    {
+      "name": "Return Invalid",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        720,
+        260
+      ],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { status: 'invalid_request', errors: $json.errors } }}",
+        "options": {
+          "responseCode": 400
+        }
+      },
+      "id": "template-node-8"
+    },
+    {
+      "name": "Return Unconfirmed",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        960,
+        260
+      ],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { status: 'unconfirmed', message: 'Email acceptance was not confirmed. Check the sender and staff inbox before retrying.' } }}",
+        "options": {
+          "responseCode": 502
+        }
+      },
+      "id": "template-node-9"
+    }
+  ],
+  "connections": {
+    "Receive Request": {
+      "main": [
+        [
+          {
+            "node": "Validate Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Request": {
+      "main": [
+        [
+          {
+            "node": "Request Is Valid",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Request Is Valid": {
+      "main": [
+        [
+          {
+            "node": "Send Staff Email",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Return Invalid",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Staff Email": {
+      "main": [
+        [
+          {
+            "node": "Confirm Mail Acceptance",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Return Unconfirmed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm Mail Acceptance": {
+      "main": [
+        [
+          {
+            "node": "Return Acceptance",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Return Unconfirmed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "UTC",
+    "saveDataSuccessExecution": "none",
+    "saveDataErrorExecution": "none",
+    "saveManualExecutions": false
+  },
+  "active": false
+}

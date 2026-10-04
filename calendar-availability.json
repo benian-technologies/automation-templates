@@ -1,0 +1,261 @@
+{
+  "name": "Check appointment availability in Google Calendar",
+  "nodes": [
+    {
+      "name": "Setup Instructions",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        0,
+        -510
+      ],
+      "parameters": {
+        "content": "## Check appointment availability in Google Calendar\n\nValidate a requested interval, check Google Calendar and return a clear available or busy result for a voice or chat assistant.\n\nServices: n8n and Google Calendar.\n\nSetup:\n1. Choose a Webhook Header Auth credential and set a unique path.\n2. Choose a Google Calendar OAuth credential on every Google Calendar node and replace YOUR_CALENDAR_ID with the same selected calendar.\n3. Use ISO timestamps with an explicit offset. Test only on a dedicated test calendar before activation.\n4. Send start and end in the JSON request body. Confirm that a busy interval returns available false and provider errors never return available true.\n\nKeep this workflow inactive until configured and tested.",
+        "width": 720,
+        "height": 440
+      },
+      "id": "template-node-1"
+    },
+    {
+      "name": "Receive Request",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "template-calendar-availability",
+        "authentication": "headerAuth",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "webhookId": "template-calendar-availability-entry",
+      "id": "template-node-2"
+    },
+    {
+      "name": "Validate Request",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        240,
+        0
+      ],
+      "parameters": {
+        "jsCode": "const b = $input.first().json.body || {};\nconst errors = [];\nconst parseInstant = value => {\n  if (typeof value !== 'string') return null;\n  const match = value.match(/^(\\d{4})-(\\d{2})-(\\d{2})T(\\d{2}):(\\d{2}):(\\d{2})(?:\\.(\\d{1,3}))?(Z|[+-]\\d{2}:\\d{2})$/);\n  if (!match) return null;\n  const [year,month,day,hour,minute,second] = match.slice(1,7).map(Number);\n  const leapYear = year%4===0 && (year%100!==0 || year%400===0);\n  const days = [31,leapYear ? 29 : 28,31,30,31,30,31,31,30,31,30,31];\n  if (month<1 || month>12 || day<1 || day>days[month-1] || hour>23 || minute>59 || second>59) return null;\n  const offset = match[8];\n  if (offset!=='Z' && (Number(offset.slice(1,3))>23 || Number(offset.slice(4,6))>59)) return null;\n  const parsed = new Date(value);\n  return Number.isFinite(parsed.getTime()) ? parsed : null;\n};\nconst start = parseInstant(b.start);\nconst end = parseInstant(b.end);\nif (!start || !end) errors.push('start and end must be real RFC3339 dates with seconds and an explicit offset');\nelse {\n  if (start <= new Date()) errors.push('start must be in the future');\n  if (end <= start || end-start > 24*60*60*1000) errors.push('The interval must be positive and at most one day');\n}\n\nreturn [{ json: { valid: errors.length===0, errors, request: { start: errors.length ? null : start.toISOString(), end: errors.length ? null : end.toISOString(),  } } }];"
+      },
+      "id": "template-node-3"
+    },
+    {
+      "name": "Request Is Valid",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        480,
+        0
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "condition-valid",
+              "leftValue": "={{ $json.valid }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "template-node-4"
+    },
+    {
+      "name": "Check Calendar",
+      "type": "n8n-nodes-base.googleCalendar",
+      "typeVersion": 1.3,
+      "position": [
+        720,
+        0
+      ],
+      "parameters": {
+        "resource": "calendar",
+        "operation": "availability",
+        "calendar": {
+          "__rl": true,
+          "value": "YOUR_CALENDAR_ID",
+          "mode": "id"
+        },
+        "timeMin": "={{ $('Validate Request').first().json.request.start }}",
+        "timeMax": "={{ $('Validate Request').first().json.request.end }}",
+        "options": {
+          "outputFormat": "availability"
+        }
+      },
+      "onError": "continueErrorOutput",
+      "id": "template-node-5"
+    },
+    {
+      "name": "Format Availability",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        960,
+        0
+      ],
+      "parameters": {
+        "jsCode": "if (typeof $json.available !== 'boolean') throw new Error('No availability result');\nconst interval = $('Validate Request').first().json.request;\nreturn [{ json: { status: $json.available ? 'available' : 'busy', available: $json.available, start: interval.start, end: interval.end } }];"
+      },
+      "id": "template-node-6",
+      "onError": "continueErrorOutput"
+    },
+    {
+      "name": "Return Availability",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        1200,
+        0
+      ],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "id": "template-node-7"
+    },
+    {
+      "name": "Return Invalid",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        720,
+        260
+      ],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { status: 'invalid_request', errors: $json.errors } }}",
+        "options": {
+          "responseCode": 400
+        }
+      },
+      "id": "template-node-8"
+    },
+    {
+      "name": "Return Provider Error",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        960,
+        260
+      ],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { status: 'unavailable', message: 'The calendar could not be checked. No availability claim was made.' } }}",
+        "options": {
+          "responseCode": 502
+        }
+      },
+      "id": "template-node-9"
+    }
+  ],
+  "connections": {
+    "Receive Request": {
+      "main": [
+        [
+          {
+            "node": "Validate Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Request": {
+      "main": [
+        [
+          {
+            "node": "Request Is Valid",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Request Is Valid": {
+      "main": [
+        [
+          {
+            "node": "Check Calendar",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Return Invalid",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Calendar": {
+      "main": [
+        [
+          {
+            "node": "Format Availability",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Return Provider Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Availability": {
+      "main": [
+        [
+          {
+            "node": "Return Availability",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Return Provider Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "UTC",
+    "saveDataSuccessExecution": "none",
+    "saveDataErrorExecution": "none",
+    "saveManualExecutions": false
+  },
+  "active": false
+}

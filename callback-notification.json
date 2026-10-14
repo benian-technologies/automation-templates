@@ -7,12 +7,12 @@
       "typeVersion": 1,
       "position": [
         0,
-        -510
+        -1160
       ],
       "parameters": {
-        "content": "## Email staff when a caller requests a callback\n\nValidate an inbound callback request, send a plain text email to a configured staff inbox and acknowledge provider acceptance.\n\nServices: n8n and Gmail.\n\nSetup:\n1. Choose a Webhook Header Auth credential and set a unique path.\n2. Choose a Gmail OAuth credential on Send Staff Email and replace YOUR_STAFF_EMAIL with the receiving staff inbox.\n3. Send name, phone and message in the authenticated JSON request body. Use a dedicated test inbox for the initial test.\n4. Check that the staff inbox actually receives the message before activation. Reconcile an uncertain send before retrying.\n\nKeep this workflow inactive until configured and tested.",
-        "width": 720,
-        "height": 440
+        "content": "## Email staff when a caller requests a callback\n\nTurn an authenticated callback request into a plain-text email to a fixed staff inbox. This workflow validates the caller name, phone number, and message, sends through Gmail, and returns a distinct response for mail-provider acceptance, invalid input, or an unconfirmed send.\n\n### Setup\n1. Import the workflow and leave it inactive while configuring it.\n2. In Receive Request, create a Header Auth credential with your chosen header name and secret value. Set a unique webhook path. Store the authentication secret in credentials and in your calling application, never in the workflow JSON.\n3. In Send Staff Email, connect your Gmail OAuth credential and replace YOUR_STAFF_EMAIL with the receiving staff inbox. Use a test sender and test inbox first. The recipient is fixed in the node; it is not taken from caller input.\n4. Send Content-Type: application/json and the configured authentication header. A synthetic body is {\"name\":\"Alex Example\",\"phone\":\"+1 202-555-0147\",\"message\":\"Please call me back about scheduling.\"}.\n5. Test valid input, a missing message, an invalid phone number, and a Gmail permission failure. For the valid case, verify actual receipt in the test inbox separately from the HTTP response.\n6. Activate only after these checks, then switch your calling application to the production webhook URL shown by n8n.\n\nThe name is required and limited to 120 characters. Phone accepts common formatting characters and requires 7 to 15 digits; this is a format check, not proof that a number is reachable. The message is required and limited to 2,000 characters. HTTP 202 returns accepted_by_mail_provider. It does not confirm delivery, reading, or a completed callback. HTTP 400 returns invalid_request and validation errors. HTTP 502 means acceptance is unconfirmed: inspect the sender and staff inbox before retrying, because the first attempt may have sent. The template has no persistent deduplication, makes no call, and sends no customer receipt. Execution saving is disabled in the export, but Gmail stores sent messages and your instance may keep other logs. Review data handling and retention before using real caller information. Prepared by Benian Technologies: https://benian.ai/integrations/n8n-automation",
+        "width": 1280,
+        "height": 780
       },
       "id": "template-node-1"
     },
@@ -167,6 +167,51 @@
         }
       },
       "id": "template-node-9"
+    },
+    {
+      "parameters": {
+        "content": "## Validate the callback request\n\nRequired JSON fields: name, phone, message. Name: at most 120 characters. Phone: 7 to 15 digits with common formatting. Message: at most 2,000 characters. Invalid requests stop before Gmail. A valid format does not prove a reachable number.",
+        "width": 600,
+        "height": 260
+      },
+      "id": "public-guide-callback-notification-1",
+      "name": "Validate the callback request",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        0,
+        -320
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## Configure a fixed staff recipient\n\nSelect a Gmail OAuth credential and replace YOUR_STAFF_EMAIL. Use a test inbox first. The email is plain text; callers cannot choose the recipient. No call or customer confirmation is sent.",
+        "width": 600,
+        "height": 240
+      },
+      "id": "public-guide-callback-notification-2",
+      "name": "Configure a fixed staff recipient",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        680,
+        -320
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## Acceptance is not delivery\n\n202: Gmail returned a message ID.\n400: invalid_request.\n502: acceptance is unconfirmed.\n\nCheck sender and staff inbox before retrying. There is no persistent deduplication. A sent email does not prove delivery, reading, or a completed callback.",
+        "width": 600,
+        "height": 280
+      },
+      "id": "public-guide-callback-notification-3",
+      "name": "Acceptance is not delivery",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        680,
+        500
+      ]
     }
   ],
   "connections": {

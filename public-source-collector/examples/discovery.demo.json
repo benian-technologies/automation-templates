@@ -1,0 +1,10 @@
+{
+  "source": "apify-export",
+  "run_id": "synthetic-completed-run",
+  "status": "SUCCEEDED",
+  "items": [
+    {"url": "https://docs.example.com/guides/setup"},
+    {"website": "https://docs.example.com/guides/setup?utm_source=fixture"},
+    {"url": "https://outside.example.org/guides"}
+  ]
+}

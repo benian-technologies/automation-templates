@@ -1,0 +1,37 @@
+{
+  "version": 1,
+  "public_files": [
+    "README.md",
+    "collector.py",
+    "serve.py",
+    "workflow.json",
+    "build_workflow.py",
+    "examples/config.demo.json",
+    "examples/discovery.demo.json",
+    "tests/test_collector.py",
+    "tests/test_controller.py",
+    "tests/test_workflow.mjs",
+    ".gitignore",
+    "PUBLIC-MANIFEST.json"
+  ],
+  "sha256": {
+    "README.md": "d42549f7b4c852e8e50769ae79d27e20f7a0a23de5bc933df56f21ccc2c16d69",
+    "collector.py": "587da59d2bd4b1e604dc4ca931960954a53209127a605cc9c2a224963e39d65d",
+    "serve.py": "eaad0b2a89b7e6bc17ff7d537700998c98b371da359358d8ab1f3bbf431d813f",
+    "workflow.json": "3a5cb19b7ad652c445648566fb4f5fcf7ac9b7cab2767145614f60e529ee8f0b",
+    "build_workflow.py": "b2b8fba7bf946768946549bd6f804a6ba0e72c1d22910f5c020c337e3642fdfa",
+    "examples/config.demo.json": "5ab2b66052b014ab08e5184943a7069ecdd6bff8f2e62bbe88fda2e56b76259d",
+    "examples/discovery.demo.json": "9b332c8e614a5d237d28716a3722225c0c39b31bc42c37d0b1d4950640b1b0f0",
+    "tests/test_collector.py": "0c6a1ee4a32e4283d1ef80f4e5be2b93402a1ca4cc2e12b2d68942de118a4056",
+    "tests/test_controller.py": "458839b6ad21d6ca0bc663ba1ee91fa0b1b0dd2042561d9eca4d352cce2c0a75",
+    "tests/test_workflow.mjs": "a7c851e560406e48ef75799394cedc721a841e1339ea41809621770b18dff7ac",
+    ".gitignore": "f5ab860d7b64f63b23d9fc9dbe14836bc33be3b2d225120aadfa862e75f4f0d8"
+  },
+  "excluded": [
+    "private/",
+    "evidence/",
+    ".runtime/",
+    "__pycache__/"
+  ],
+  "note": "Only explicit public_files may be packaged. This manifest intentionally does not hash itself."
+}

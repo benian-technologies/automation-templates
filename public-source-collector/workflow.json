@@ -1,0 +1,262 @@
+{
+  "name": "Collect permitted public pages with durable budgets and continuation",
+  "nodes": [
+    {
+      "id": "start-manually",
+      "name": "Start manually",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {}
+    },
+    {
+      "id": "select-collection-job",
+      "name": "Select collection job",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        0
+      ],
+      "parameters": {
+        "jsCode": "// Match the job_id in the service config. No source URLs or tokens go here.\nreturn [{json:{job_id:'public-docs-demo'}}];"
+      }
+    },
+    {
+      "id": "collect-bounded-batch",
+      "name": "Collect bounded batch",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        460,
+        0
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "http://127.0.0.1:8787/v1/tick",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ JSON.stringify({job_id:$json.job_id}) }}",
+        "options": {
+          "timeout": 180000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          }
+        }
+      },
+      "retryOnFail": false,
+      "onError": "stopWorkflow"
+    },
+    {
+      "id": "validate-collection-receipt",
+      "name": "Validate collection receipt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        700,
+        0
+      ],
+      "parameters": {
+        "jsCode": "const r = $input.first().json;\nconst keys = ['job_id','mode','state','continue','wait_seconds','reason','frontier','frontier_truncated','requests','charged_bytes','pages','unique_documents'].sort();\nif (JSON.stringify(Object.keys(r).sort()) !== JSON.stringify(keys)) throw new Error('invalid_receipt_fields');\nif (r.job_id !== $('Select collection job').first().json.job_id) throw new Error('job_mismatch');\nif (!['offline_demo','live'].includes(r.mode) || !['running','complete','partial','paused'].includes(r.state)) throw new Error('invalid_receipt');\nif (typeof r.continue !== 'boolean' || r.continue !== (r.state === 'running')) throw new Error('invalid_continuation');\nif (typeof r.frontier_truncated !== 'boolean' || !r.frontier || typeof r.frontier !== 'object' || Array.isArray(r.frontier)) throw new Error('invalid_frontier');\nfor (const [k,v] of Object.entries(r.frontier)) {\n  if (!['pending','fetching','done','failed','blocked','skipped','redirect'].includes(k) || !Number.isSafeInteger(v) || v < 0 || v > 10000) throw new Error('invalid_frontier');\n}\nfor (const k of ['wait_seconds','requests','charged_bytes','pages','unique_documents']) {\n  if (!Number.isSafeInteger(r[k]) || r[k] < 0) throw new Error('invalid_count');\n}\nif (r.wait_seconds > 86400 || (r.continue && r.wait_seconds < 1) || r.requests > 10000 || r.pages > 5000 || r.unique_documents > r.pages || r.charged_bytes > 100000000) throw new Error('receipt_out_of_bounds');\nif (r.reason !== null && !['time_budget','request_budget','byte_budget','page_budget'].includes(r.reason)) throw new Error('invalid_reason');\nconst pending = (r.frontier.pending || 0) + (r.frontier.fetching || 0);\nconst incomplete = (r.frontier.failed || 0) > 0 || r.frontier_truncated;\nif (Object.values(r.frontier).reduce((a,b)=>a+b,0) > 10000) throw new Error('invalid_frontier_total');\nif (r.state === 'running' && (pending === 0 || r.reason !== null)) throw new Error('invalid_running_state');\nif (r.state === 'paused' && (pending === 0 || r.reason === null)) throw new Error('invalid_paused_state');\nif (r.state === 'complete' && (pending > 0 || incomplete || r.reason !== null)) throw new Error('invalid_complete_state');\nif (r.state === 'partial' && (pending > 0 || !incomplete || r.reason !== null)) throw new Error('invalid_partial_state');\nreturn [{json:r}];"
+      }
+    },
+    {
+      "id": "more-work-within-budget",
+      "name": "More work within budget",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        950,
+        0
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "continue",
+              "leftValue": "={{ $json.continue }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "wait-for-source-pacing",
+      "name": "Wait for source pacing",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        1170,
+        -130
+      ],
+      "parameters": {
+        "resume": "timeInterval",
+        "amount": "={{ $json.wait_seconds }}",
+        "unit": "seconds"
+      }
+    },
+    {
+      "id": "return-final-receipt",
+      "name": "Return final receipt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1170,
+        130
+      ],
+      "parameters": {
+        "jsCode": "// Complete means the bounded queue is exhausted, not the whole web.\n// Partial and paused require inspecting local receipts before a new job.\nreturn $input.all();"
+      }
+    },
+    {
+      "id": "setup-and-permission",
+      "name": "Setup and permission",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        0,
+        -430
+      ],
+      "parameters": {
+        "content": "## 1. Start the included collector service\nThis template needs collector.py and serve.py from the accompanying package. Start in offline demo mode first. The service and n8n must share a host/network namespace.\n\nSelect a Header Auth credential on the HTTP node: Authorization: Bearer <private controller token>. Keep the value in n8n's credential store. The exported workflow contains no credential binding.",
+        "height": 330,
+        "width": 440
+      }
+    },
+    {
+      "id": "collection-boundary",
+      "name": "Collection boundary",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        470,
+        -430
+      ],
+      "parameters": {
+        "content": "## 2. Configure a permitted source before live use\nAllowlisted HTTPS origins and paths, permission confirmation, robots checks, request/byte/time budgets and pacing are enforced by the included service. No browser, authentication, paid actor launches, email harvesting or outreach.\n\nUse the optional completed-export importer for discovery. It retains only in-scope URLs and import receipts.",
+        "height": 330,
+        "width": 440
+      }
+    },
+    {
+      "id": "durability-and-result",
+      "name": "Durability and result",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        940,
+        -560
+      ],
+      "parameters": {
+        "content": "## 3. Review the receipt\nThe workflow is manual and inactive. The service commits state to SQLite before requests and supports continuation after a restart. No automatic HTTP retries or redirects.\n\nThe final node distinguishes complete, partial and paused. Page data stays in the local store, not workflow execution output. See README for offline proof, export and recovery.",
+        "height": 330,
+        "width": 440
+      }
+    }
+  ],
+  "connections": {
+    "Start manually": {
+      "main": [
+        [
+          {
+            "node": "Select collection job",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Select collection job": {
+      "main": [
+        [
+          {
+            "node": "Collect bounded batch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Collect bounded batch": {
+      "main": [
+        [
+          {
+            "node": "Validate collection receipt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate collection receipt": {
+      "main": [
+        [
+          {
+            "node": "More work within budget",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "More work within budget": {
+      "main": [
+        [
+          {
+            "node": "Wait for source pacing",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Return final receipt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait for source pacing": {
+      "main": [
+        [
+          {
+            "node": "Collect bounded batch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1",
+    "saveDataErrorExecution": "none",
+    "saveDataSuccessExecution": "none",
+    "saveManualExecutions": false
+  }
+}

@@ -7,12 +7,12 @@
       "typeVersion": 1,
       "position": [
         0,
-        -510
+        -1160
       ],
       "parameters": {
-        "content": "## Check appointment availability in Google Calendar\n\nValidate a requested interval, check Google Calendar and return a clear available or busy result for a voice or chat assistant.\n\nServices: n8n and Google Calendar.\n\nSetup:\n1. Choose a Webhook Header Auth credential and set a unique path.\n2. Choose a Google Calendar OAuth credential on every Google Calendar node and replace YOUR_CALENDAR_ID with the same selected calendar.\n3. Use ISO timestamps with an explicit offset. Test only on a dedicated test calendar before activation.\n4. Send start and end in the JSON request body. Confirm that a busy interval returns available false and provider errors never return available true.\n\nKeep this workflow inactive until configured and tested.",
-        "width": 720,
-        "height": 440
+        "content": "## Check appointment availability in Google Calendar\n\nCheck a proposed appointment interval through an authenticated webhook. This workflow validates the requested times, reads Google Calendar availability, and returns a structured available or busy result. It suits booking forms, voice assistants, chat assistants, and internal scheduling tools that already have a proposed start and end time.\n\n### Setup\n1. Import the workflow and leave it inactive while configuring it.\n2. In Receive Request, create a Header Auth credential with your chosen header name and secret value. Set a unique webhook path. Keep the secret in credentials and in your calling application, never in the workflow JSON.\n3. In Check Calendar, connect your Google Calendar OAuth credential and replace YOUR_CALENDAR_ID with a calendar that credential can access. Start with a dedicated test calendar.\n4. Send Content-Type: application/json and the configured authentication header. The request body needs start and end, such as {\"start\":\"2030-01-15T14:00:00-06:00\",\"end\":\"2030-01-15T14:30:00-06:00\"}. Replace these example dates with a future interval you intend to test.\n5. Test one free interval and one busy interval. Test invalid times and a provider permission failure. Verify that a provider failure never returns an available result.\n6. Activate only after these checks, then use the production webhook URL shown by n8n.\n\nHTTP 200 returns status available or busy, a boolean available, and the normalized UTC start and end. HTTP 400 returns invalid_request and validation errors. HTTP 502 returns unavailable without claiming that the interval is free. This is a snapshot for one interval. It neither generates a slot catalogue nor holds or creates an appointment. Calendar state can change after the check. Successful, error, and manual execution saving are disabled in the export; review your instance logging and retention before using real requests. Prepared by Benian Technologies: https://benian.ai/integrations/n8n-automation",
+        "width": 1280,
+        "height": 780
       },
       "id": "template-node-1"
     },
@@ -170,6 +170,51 @@
         }
       },
       "id": "template-node-9"
+    },
+    {
+      "parameters": {
+        "content": "## Validate the interval\n\nSend start and end in the JSON body. Use complete timestamps with seconds and Z or a numeric UTC offset. Start must be in the future; duration must be greater than zero and at most 24 hours. Invalid requests stop before Google Calendar.",
+        "width": 600,
+        "height": 240
+      },
+      "id": "public-guide-calendar-availability-1",
+      "name": "Validate the interval",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        0,
+        -320
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## Configure the calendar\n\nSelect a Google Calendar OAuth credential and replace YOUR_CALENDAR_ID. Use a dedicated test calendar first. This node reads availability only; it does not reserve or create an event.",
+        "width": 600,
+        "height": 240
+      },
+      "id": "public-guide-calendar-availability-2",
+      "name": "Configure the calendar",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        680,
+        -320
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## Interpret the response\n\n200: available or busy with a boolean result.\n400: invalid_request.\n502: unavailable, with no availability claim.\n\nA free result is a snapshot. Recheck before booking and account for concurrent calendar changes.",
+        "width": 600,
+        "height": 260
+      },
+      "id": "public-guide-calendar-availability-3",
+      "name": "Interpret the response",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        680,
+        500
+      ]
     }
   ],
   "connections": {

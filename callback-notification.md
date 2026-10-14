@@ -1,30 +1,30 @@
 # Email staff when a caller requests a callback
 
-Receive an authenticated callback request, validate its fields and send a plain-text notification to a configured staff inbox through Gmail. The response distinguishes provider acceptance from an unconfirmed send.
+## Quick Overview
+
+Turn an authenticated callback request into a plain-text email to a fixed staff inbox. This workflow validates the caller name, phone number, and message, sends through Gmail, and returns a distinct response for mail-provider acceptance, invalid input, or an unconfirmed send.
+
+## How It Works
+
+A webhook receives a JSON POST request. A Code node trims and validates name, phone, and message before any email is sent. The Gmail node sends the formatted request to the staff address configured by the workflow owner. The workflow returns HTTP 202 only when Gmail returns a nonempty message ID. Provider errors and malformed acceptance results return HTTP 502 so the calling system does not mistake uncertainty for confirmed acceptance.
 
 ## Setup
 
-1. Import `callback-notification.json`. It imports inactive.
-2. Configure Webhook Header Auth and a unique path on Receive Request.
-3. Connect your Gmail OAuth credential to Send Staff Email. Replace `YOUR_STAFF_EMAIL` with the staff inbox that should receive notifications. The request cannot select its own recipient.
-4. Listen on the test webhook and send an authenticated JSON POST, using a dedicated test inbox first:
+1. Import the workflow and leave it inactive while configuring it.
+2. In Receive Request, create a Header Auth credential with your chosen header name and secret value. Set a unique webhook path. Store the authentication secret in credentials and in your calling application, never in the workflow JSON.
+3. In Send Staff Email, connect your Gmail OAuth credential and replace YOUR_STAFF_EMAIL with the receiving staff inbox. Use a test sender and test inbox first. The recipient is fixed in the node; it is not taken from caller input.
+4. Send Content-Type: application/json and the configured authentication header. A synthetic body is {"name":"Alex Example","phone":"+1 202-555-0147","message":"Please call me back about scheduling."}.
+5. Test valid input, a missing message, an invalid phone number, and a Gmail permission failure. For the valid case, verify actual receipt in the test inbox separately from the HTTP response.
+6. Activate only after these checks, then switch your calling application to the production webhook URL shown by n8n.
 
-```json
-{"name":"Test Caller","phone":"+1 202 555 0142","message":"Please call me back about my appointment."}
-```
+## Requirements
 
-Confirm actual inbox receipt before activating the production webhook. Keep authentication values in n8n Credentials and the caller's secure configuration.
+An n8n installation with Webhook, Code, IF, Respond to Webhook, and Gmail nodes; a Google account able to send through Gmail; Gmail OAuth credentials; a receiving staff inbox; and a calling application that can send an authenticated JSON POST request. No voice or AI provider is required.
 
-## Input and responses
+## Customization
 
-Name is required and limited to 120 characters. Message is required and limited to 2,000 characters. Phone may contain digits, spaces, `+`, parentheses, periods and hyphens, and must contain 7 to 15 digits. This is format validation, not verification that a number is reachable or belongs to the caller.
+Set the receiving staff address and email subject. Adapt the plain-text message to your team process. Add persistent request IDs and a deduplication store before enabling automatic retries or multiple delivery paths. Keep the recipient controlled by the workflow owner and preserve the explicit provider-acceptance check.
 
-- HTTP 202 `accepted_by_mail_provider`: Gmail returned a nonempty message ID.
-- HTTP 400 `invalid_request`: required data is missing or invalid.
-- HTTP 502 `unconfirmed`: sending failed or a message ID was not returned.
+## Additional Info
 
-A provider-accepted message is not proof of inbox delivery, staff review or a completed callback. The workflow does not call the person, create a CRM task or suppress duplicate submissions. For an uncertain send, check the sender and staff inbox before retrying. Repeated requests can generate repeated emails.
-
-## Validation
-
-The exact JSON imported successfully into an isolated n8n 2.41.6 container. Local synthetic checks covered request validation and receipt handling. Gmail OAuth, a real send and the authenticated webhook have not been exercised against a provider. Execution retention is disabled in the export.
+The name is required and limited to 120 characters. Phone accepts common formatting characters and requires 7 to 15 digits; this is a format check, not proof that a number is reachable. The message is required and limited to 2,000 characters. HTTP 202 returns accepted_by_mail_provider. It does not confirm delivery, reading, or a completed callback. HTTP 400 returns invalid_request and validation errors. HTTP 502 means acceptance is unconfirmed: inspect the sender and staff inbox before retrying, because the first attempt may have sent. The template has no persistent deduplication, makes no call, and sends no customer receipt. Execution saving is disabled in the export, but Gmail stores sent messages and your instance may keep other logs. Review data handling and retention before using real caller information. Prepared by Benian Technologies: https://benian.ai/integrations/n8n-automation

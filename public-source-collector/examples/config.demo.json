@@ -1,0 +1,20 @@
+{
+  "job_id": "public-docs-demo",
+  "permission_confirmed": true,
+  "origins": {"https://docs.example.com": ["/guides"]},
+  "seeds": ["https://docs.example.com/guides"],
+  "query_keys": [],
+  "contact_url": "https://example.com/collector-info",
+  "limits": {
+    "max_requests": 30,
+    "max_pages": 20,
+    "max_urls": 100,
+    "max_depth": 3,
+    "max_attempts": 3,
+    "max_response_bytes": 524288,
+    "max_total_bytes": 10000000,
+    "max_runtime_seconds": 600,
+    "delay_seconds": 2,
+    "batch_pages": 4
+  }
+}

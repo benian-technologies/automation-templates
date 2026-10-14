@@ -1,0 +1,508 @@
+{
+  "name": "Create and verify a WordPress draft after editor approval",
+  "active": false,
+  "nodes": [
+    {
+      "name": "Receive Request",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "approved-wordpress-draft",
+        "authentication": "headerAuth",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "webhookId": "approved-wordpress-draft",
+      "id": "approved-wordpress-draft-1"
+    },
+    {
+      "name": "Prepare Request",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        0
+      ],
+      "parameters": {
+        "jsCode": "const h=(function common() {\n  const object = x => x !== null && typeof x === 'object' && !Array.isArray(x);\n  function text(x, name, max, min = 1) {\n    if (typeof x !== 'string' || x.trim().length < min || x.length > max || /[\\u0000-\\u0008\\u000b\\u000c\\u000e-\\u001f]/.test(x)) throw Error(name);\n    return x.trim();\n  }\n  function array(x, name, max, min = 0) {\n    if (!Array.isArray(x) || x.length < min || x.length > max) throw Error(name);\n    return x;\n  }\n  function keys(x, allowed) {\n    if (!object(x) || Object.keys(x).some(k => !allowed.includes(k))) throw Error('unexpected_fields');\n  }\n  function id(x) { const v = text(x, 'id', 80); if (!/^[A-Za-z0-9_-]+$/.test(v)) throw Error('id'); return v; }\n  function url(x) {\n    const v = text(x, 'url', 1500);\n    if (!/^https:\\/\\/[a-z0-9](?:[a-z0-9.-]*[a-z0-9])?(?::443)?(?:\\/[^\\s]*)?$/i.test(v) || /[<>\"'\\\\]/.test(v)) throw Error('url');\n    return v;\n  }\n  function unique(values) { if (new Set(values).size !== values.length) throw Error('duplicate_id'); }\n  function request(x, allowed) {\n    keys(x, allowed);\n    if (JSON.stringify(x).length > 60000) throw Error('request_too_large');\n    return id(x.requestId);\n  }\n  function config(c) {\n    if (!c || c.enabled !== true) return {route: 'respond', httpStatus: 503, result: {status: 'setup_required'}};\n    text(c.model, 'model', 100);\n    if (!/^[a-zA-Z0-9._-]+$/.test(c.model)) throw Error('model');\n    return null;\n  }\n  function model(c, system, data, context, maxTokens) {\n    return {route:'model', context, request:{model:c.model, max_tokens:maxTokens, system, messages:[{role:'user', content:JSON.stringify(data)}]}};\n  }\n  function response(status, result) { return {route:'respond', httpStatus:status, result}; }\n  function invalid() { return response(400, {status:'invalid_request', message:'Check the documented input schema. No provider request was made.'}); }\n  function unavailable() { return response(502, {status:'unavailable', message:'The provider response could not be verified. No external action was taken.'}); }\n  function result(raw) {\n    if (!object(raw) || raw.statusCode !== 200 || !object(raw.body) || raw.body.type !== 'message' || raw.body.stop_reason !== 'end_turn') throw Error('provider');\n    const parts = array(raw.body.content, 'content', 10, 1);\n    if (parts.some(p => !object(p) || p.type !== 'text' || typeof p.text !== 'string')) throw Error('content');\n    const s = parts.map(p => p.text).join(''); if (s.length > 30000) throw Error('output_too_large');\n    const value = JSON.parse(s); if (!object(value)) throw Error('object'); return value;\n  }\n  function quote(q, source) { const v = text(q, 'quote', 600, 5); if (!source.includes(v)) throw Error('quote_not_in_source'); return v; }\n  return {object,text,array,keys,id,url,unique,request,config,model,response,invalid,unavailable,result,quote};\n})();\nconst config={\"enabled\":false,\"siteOrigin\":\"https://example.invalid\"};\nreturn [{json:(function prepareWordpress(body,config,h){\n  try{\n    if(config.enabled!==true)return h.response(503,{status:'setup_required'});\n    const requestId=h.request(body,['requestId','slug','title','paragraphs','editorApproved','editorReference']);\n    if(body.editorApproved!==true)throw Error('editor_approval');\n    const editorReference=h.text(body.editorReference,'editorReference',150);\n    const slug=h.text(body.slug,'slug',80);if(!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug))throw Error('slug');\n    const title=h.text(body.title,'title',180);if(/[<>\\[\\]]/.test(title))throw Error('title_markup');\n    const paragraphs=h.array(body.paragraphs,'paragraphs',30,1).map(p=>h.text(p,'paragraph',2500));if(paragraphs.join('').length>30000)throw Error('content_size');\n    if(paragraphs.some(p=>/[\\[\\]]/.test(p)))throw Error('shortcode_syntax');\n    const origin=h.url(config.siteOrigin);if(!/^https:\\/\\/[a-z0-9.-]+(?::443)?$/i.test(origin)||origin.includes('example.invalid')||origin.includes('example.com'))throw Error('site_origin');\n    const esc=s=>s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\"/g,'&quot;').replace(/'/g,'&#39;');\n    const content=paragraphs.map(p=>'<p>'+esc(p)+'</p>').join('\\n');\n    return{route:'lookup',context:{requestId,slug,title,content,origin,editorReference},lookupUrl:origin+'/wp-json/wp/v2/posts?context=edit&status=draft,pending,future,publish,private,trash&per_page=2&slug='+encodeURIComponent(slug),createUrl:origin+'/wp-json/wp/v2/posts',createBody:{slug,title,content,status:'draft'}};\n  }catch{return h.invalid();}\n})($json.body,config,h)}];"
+      },
+      "id": "approved-wordpress-draft-2"
+    },
+    {
+      "name": "Lookup Allowed",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        440,
+        0
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "route",
+              "leftValue": "={{ $json.route }}",
+              "rightValue": "lookup",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "approved-wordpress-draft-3"
+    },
+    {
+      "name": "Find Exact Slug",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        660,
+        0
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $json.lookupUrl }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBasicAuth",
+        "sendHeaders": false,
+        "headerParameters": {
+          "parameters": []
+        },
+        "options": {
+          "timeout": 20000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "neverError": true,
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "retryOnFail": false,
+      "onError": "continueRegularOutput",
+      "id": "approved-wordpress-draft-4"
+    },
+    {
+      "name": "Inspect Existing Draft",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        880,
+        0
+      ],
+      "parameters": {
+        "jsCode": "const h=(function common() {\n  const object = x => x !== null && typeof x === 'object' && !Array.isArray(x);\n  function text(x, name, max, min = 1) {\n    if (typeof x !== 'string' || x.trim().length < min || x.length > max || /[\\u0000-\\u0008\\u000b\\u000c\\u000e-\\u001f]/.test(x)) throw Error(name);\n    return x.trim();\n  }\n  function array(x, name, max, min = 0) {\n    if (!Array.isArray(x) || x.length < min || x.length > max) throw Error(name);\n    return x;\n  }\n  function keys(x, allowed) {\n    if (!object(x) || Object.keys(x).some(k => !allowed.includes(k))) throw Error('unexpected_fields');\n  }\n  function id(x) { const v = text(x, 'id', 80); if (!/^[A-Za-z0-9_-]+$/.test(v)) throw Error('id'); return v; }\n  function url(x) {\n    const v = text(x, 'url', 1500);\n    if (!/^https:\\/\\/[a-z0-9](?:[a-z0-9.-]*[a-z0-9])?(?::443)?(?:\\/[^\\s]*)?$/i.test(v) || /[<>\"'\\\\]/.test(v)) throw Error('url');\n    return v;\n  }\n  function unique(values) { if (new Set(values).size !== values.length) throw Error('duplicate_id'); }\n  function request(x, allowed) {\n    keys(x, allowed);\n    if (JSON.stringify(x).length > 60000) throw Error('request_too_large');\n    return id(x.requestId);\n  }\n  function config(c) {\n    if (!c || c.enabled !== true) return {route: 'respond', httpStatus: 503, result: {status: 'setup_required'}};\n    text(c.model, 'model', 100);\n    if (!/^[a-zA-Z0-9._-]+$/.test(c.model)) throw Error('model');\n    return null;\n  }\n  function model(c, system, data, context, maxTokens) {\n    return {route:'model', context, request:{model:c.model, max_tokens:maxTokens, system, messages:[{role:'user', content:JSON.stringify(data)}]}};\n  }\n  function response(status, result) { return {route:'respond', httpStatus:status, result}; }\n  function invalid() { return response(400, {status:'invalid_request', message:'Check the documented input schema. No provider request was made.'}); }\n  function unavailable() { return response(502, {status:'unavailable', message:'The provider response could not be verified. No external action was taken.'}); }\n  function result(raw) {\n    if (!object(raw) || raw.statusCode !== 200 || !object(raw.body) || raw.body.type !== 'message' || raw.body.stop_reason !== 'end_turn') throw Error('provider');\n    const parts = array(raw.body.content, 'content', 10, 1);\n    if (parts.some(p => !object(p) || p.type !== 'text' || typeof p.text !== 'string')) throw Error('content');\n    const s = parts.map(p => p.text).join(''); if (s.length > 30000) throw Error('output_too_large');\n    const value = JSON.parse(s); if (!object(value)) throw Error('object'); return value;\n  }\n  function quote(q, source) { const v = text(q, 'quote', 600, 5); if (!source.includes(v)) throw Error('quote_not_in_source'); return v; }\n  return {object,text,array,keys,id,url,unique,request,config,model,response,invalid,unavailable,result,quote};\n})();\nreturn [{json:(function inspectWordpressLookup(raw,prepared,h){\n  try{\n    if(raw.statusCode!==200||!Array.isArray(raw.body)||raw.body.length>1)throw Error('lookup');\n    if(!raw.body.length)return{...prepared,route:'create'};\n    const p=raw.body[0],c=prepared.context;\n    if(!Number.isSafeInteger(p.id)||p.id<1||p.slug!==c.slug||p.status!=='draft'||p.title?.raw!==c.title||p.content?.raw!==c.content)return h.response(409,{requestId:c.requestId,status:'existing_slug_conflict',message:'Inspect the existing post. No post was changed.'});\n    return{context:c,route:'verify',created:false,postId:p.id,readUrl:c.origin+'/wp-json/wp/v2/posts/'+p.id+'?context=edit'};\n  }catch{return h.unavailable();}\n})($json,$('Prepare Request').first().json,h)}];"
+      },
+      "id": "approved-wordpress-draft-5"
+    },
+    {
+      "name": "Create Missing Draft",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1100,
+        0
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "route",
+              "leftValue": "={{ $json.route }}",
+              "rightValue": "create",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "approved-wordpress-draft-6"
+    },
+    {
+      "name": "Create Draft",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1320,
+        -100
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $json.createUrl }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBasicAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": []
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.createBody }}",
+        "options": {
+          "timeout": 20000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "neverError": true,
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "retryOnFail": false,
+      "onError": "continueRegularOutput",
+      "id": "approved-wordpress-draft-7"
+    },
+    {
+      "name": "Inspect Create Receipt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1540,
+        -100
+      ],
+      "parameters": {
+        "jsCode": "const h=(function common() {\n  const object = x => x !== null && typeof x === 'object' && !Array.isArray(x);\n  function text(x, name, max, min = 1) {\n    if (typeof x !== 'string' || x.trim().length < min || x.length > max || /[\\u0000-\\u0008\\u000b\\u000c\\u000e-\\u001f]/.test(x)) throw Error(name);\n    return x.trim();\n  }\n  function array(x, name, max, min = 0) {\n    if (!Array.isArray(x) || x.length < min || x.length > max) throw Error(name);\n    return x;\n  }\n  function keys(x, allowed) {\n    if (!object(x) || Object.keys(x).some(k => !allowed.includes(k))) throw Error('unexpected_fields');\n  }\n  function id(x) { const v = text(x, 'id', 80); if (!/^[A-Za-z0-9_-]+$/.test(v)) throw Error('id'); return v; }\n  function url(x) {\n    const v = text(x, 'url', 1500);\n    if (!/^https:\\/\\/[a-z0-9](?:[a-z0-9.-]*[a-z0-9])?(?::443)?(?:\\/[^\\s]*)?$/i.test(v) || /[<>\"'\\\\]/.test(v)) throw Error('url');\n    return v;\n  }\n  function unique(values) { if (new Set(values).size !== values.length) throw Error('duplicate_id'); }\n  function request(x, allowed) {\n    keys(x, allowed);\n    if (JSON.stringify(x).length > 60000) throw Error('request_too_large');\n    return id(x.requestId);\n  }\n  function config(c) {\n    if (!c || c.enabled !== true) return {route: 'respond', httpStatus: 503, result: {status: 'setup_required'}};\n    text(c.model, 'model', 100);\n    if (!/^[a-zA-Z0-9._-]+$/.test(c.model)) throw Error('model');\n    return null;\n  }\n  function model(c, system, data, context, maxTokens) {\n    return {route:'model', context, request:{model:c.model, max_tokens:maxTokens, system, messages:[{role:'user', content:JSON.stringify(data)}]}};\n  }\n  function response(status, result) { return {route:'respond', httpStatus:status, result}; }\n  function invalid() { return response(400, {status:'invalid_request', message:'Check the documented input schema. No provider request was made.'}); }\n  function unavailable() { return response(502, {status:'unavailable', message:'The provider response could not be verified. No external action was taken.'}); }\n  function result(raw) {\n    if (!object(raw) || raw.statusCode !== 200 || !object(raw.body) || raw.body.type !== 'message' || raw.body.stop_reason !== 'end_turn') throw Error('provider');\n    const parts = array(raw.body.content, 'content', 10, 1);\n    if (parts.some(p => !object(p) || p.type !== 'text' || typeof p.text !== 'string')) throw Error('content');\n    const s = parts.map(p => p.text).join(''); if (s.length > 30000) throw Error('output_too_large');\n    const value = JSON.parse(s); if (!object(value)) throw Error('object'); return value;\n  }\n  function quote(q, source) { const v = text(q, 'quote', 600, 5); if (!source.includes(v)) throw Error('quote_not_in_source'); return v; }\n  return {object,text,array,keys,id,url,unique,request,config,model,response,invalid,unavailable,result,quote};\n})();\nreturn [{json:(function inspectWordpressCreate(raw,prepared,h){\n  try{\n    const p=raw.body,c=prepared.context;\n    if(raw.statusCode!==201||!p||!Number.isSafeInteger(p.id)||p.id<1)throw Error('create_unknown');\n    if(p.slug!==c.slug)return h.response(409,{requestId:c.requestId,status:'possible_concurrent_create',postId:p.id,message:'A draft may exist with a suffixed slug. Inspect the site before retrying.'});\n    return{context:c,route:'verify',created:true,postId:p.id,readUrl:c.origin+'/wp-json/wp/v2/posts/'+p.id+'?context=edit'};\n  }catch{return h.response(502,{requestId:prepared.context.requestId,status:'create_outcome_unknown',message:'Do not blindly repeat. Inspect WordPress for the requested slug and any suffixed drafts first.'});}\n})($json,$('Prepare Request').first().json,h)}];"
+      },
+      "id": "approved-wordpress-draft-8"
+    },
+    {
+      "name": "Readback Allowed",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1760,
+        0
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "route",
+              "leftValue": "={{ $json.route }}",
+              "rightValue": "verify",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "approved-wordpress-draft-9"
+    },
+    {
+      "name": "Prepare Readback",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1980,
+        0
+      ],
+      "parameters": {
+        "jsCode": "return $input.all();"
+      },
+      "id": "approved-wordpress-draft-10"
+    },
+    {
+      "name": "Read Draft By ID",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2200,
+        0
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $json.readUrl }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBasicAuth",
+        "sendHeaders": false,
+        "headerParameters": {
+          "parameters": []
+        },
+        "options": {
+          "timeout": 20000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          },
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "neverError": true,
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "retryOnFail": false,
+      "onError": "continueRegularOutput",
+      "id": "approved-wordpress-draft-11"
+    },
+    {
+      "name": "Verify Draft",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2420,
+        0
+      ],
+      "parameters": {
+        "jsCode": "const h=(function common() {\n  const object = x => x !== null && typeof x === 'object' && !Array.isArray(x);\n  function text(x, name, max, min = 1) {\n    if (typeof x !== 'string' || x.trim().length < min || x.length > max || /[\\u0000-\\u0008\\u000b\\u000c\\u000e-\\u001f]/.test(x)) throw Error(name);\n    return x.trim();\n  }\n  function array(x, name, max, min = 0) {\n    if (!Array.isArray(x) || x.length < min || x.length > max) throw Error(name);\n    return x;\n  }\n  function keys(x, allowed) {\n    if (!object(x) || Object.keys(x).some(k => !allowed.includes(k))) throw Error('unexpected_fields');\n  }\n  function id(x) { const v = text(x, 'id', 80); if (!/^[A-Za-z0-9_-]+$/.test(v)) throw Error('id'); return v; }\n  function url(x) {\n    const v = text(x, 'url', 1500);\n    if (!/^https:\\/\\/[a-z0-9](?:[a-z0-9.-]*[a-z0-9])?(?::443)?(?:\\/[^\\s]*)?$/i.test(v) || /[<>\"'\\\\]/.test(v)) throw Error('url');\n    return v;\n  }\n  function unique(values) { if (new Set(values).size !== values.length) throw Error('duplicate_id'); }\n  function request(x, allowed) {\n    keys(x, allowed);\n    if (JSON.stringify(x).length > 60000) throw Error('request_too_large');\n    return id(x.requestId);\n  }\n  function config(c) {\n    if (!c || c.enabled !== true) return {route: 'respond', httpStatus: 503, result: {status: 'setup_required'}};\n    text(c.model, 'model', 100);\n    if (!/^[a-zA-Z0-9._-]+$/.test(c.model)) throw Error('model');\n    return null;\n  }\n  function model(c, system, data, context, maxTokens) {\n    return {route:'model', context, request:{model:c.model, max_tokens:maxTokens, system, messages:[{role:'user', content:JSON.stringify(data)}]}};\n  }\n  function response(status, result) { return {route:'respond', httpStatus:status, result}; }\n  function invalid() { return response(400, {status:'invalid_request', message:'Check the documented input schema. No provider request was made.'}); }\n  function unavailable() { return response(502, {status:'unavailable', message:'The provider response could not be verified. No external action was taken.'}); }\n  function result(raw) {\n    if (!object(raw) || raw.statusCode !== 200 || !object(raw.body) || raw.body.type !== 'message' || raw.body.stop_reason !== 'end_turn') throw Error('provider');\n    const parts = array(raw.body.content, 'content', 10, 1);\n    if (parts.some(p => !object(p) || p.type !== 'text' || typeof p.text !== 'string')) throw Error('content');\n    const s = parts.map(p => p.text).join(''); if (s.length > 30000) throw Error('output_too_large');\n    const value = JSON.parse(s); if (!object(value)) throw Error('object'); return value;\n  }\n  function quote(q, source) { const v = text(q, 'quote', 600, 5); if (!source.includes(v)) throw Error('quote_not_in_source'); return v; }\n  return {object,text,array,keys,id,url,unique,request,config,model,response,invalid,unavailable,result,quote};\n})();\nreturn [{json:(function finishWordpress(raw,receipt,h){\n  try{\n    const p=raw.body,c=receipt.context;\n    if(raw.statusCode!==200||p?.id!==receipt.postId||p.slug!==c.slug||p.status!=='draft'||p.title?.raw!==c.title||p.content?.raw!==c.content)throw Error('readback');\n    return h.response(200,{requestId:c.requestId,status:receipt.created?'draft_created_and_verified':'existing_draft_verified',postId:p.id,slug:p.slug,editorUrl:c.origin+'/wp-admin/post.php?post='+p.id+'&action=edit',editorReference:c.editorReference,published:false});\n  }catch{return h.response(502,{requestId:receipt.context.requestId,status:'draft_readback_failed',postId:receipt.postId,message:'Inspect this post before retrying. No publish operation was attempted.'});}\n})($json,$('Prepare Readback').first().json,h)}];"
+      },
+      "id": "approved-wordpress-draft-12"
+    },
+    {
+      "name": "Return Result",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        2640,
+        200
+      ],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json.result }}",
+        "options": {
+          "responseCode": "={{ $json.httpStatus }}",
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Cache-Control",
+                "value": "no-store"
+              },
+              {
+                "name": "X-Content-Type-Options",
+                "value": "nosniff"
+              }
+            ]
+          }
+        }
+      },
+      "id": "approved-wordpress-draft-13"
+    },
+    {
+      "name": "Setup and limits",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        220,
+        -450
+      ],
+      "parameters": {
+        "content": "## Editor-approved draft only\nAccepts approved plain-text paragraphs, escapes HTML and creates status=draft. Looks up the exact stable slug before creation, then reads the exact post ID.\n\nConfigure siteOrigin and enabled in Prepare Request. Bind one restricted WordPress Application Password using Basic Auth to all three HTTP nodes. Bind a separate ingress Header Auth credential.\n\nNo publish operation exists. Serialize requests per slug. WordPress slug creation is not atomic; a suffixed slug or unknown result needs manual reconciliation before retry. Never automatically retry a POST. Read the guide.",
+        "width": 1100,
+        "height": 320
+      },
+      "id": "approved-wordpress-draft-14"
+    }
+  ],
+  "connections": {
+    "Receive Request": {
+      "main": [
+        [
+          {
+            "node": "Prepare Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Request": {
+      "main": [
+        [
+          {
+            "node": "Lookup Allowed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lookup Allowed": {
+      "main": [
+        [
+          {
+            "node": "Find Exact Slug",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Return Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Find Exact Slug": {
+      "main": [
+        [
+          {
+            "node": "Inspect Existing Draft",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Inspect Existing Draft": {
+      "main": [
+        [
+          {
+            "node": "Create Missing Draft",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Missing Draft": {
+      "main": [
+        [
+          {
+            "node": "Create Draft",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Readback Allowed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Draft": {
+      "main": [
+        [
+          {
+            "node": "Inspect Create Receipt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Inspect Create Receipt": {
+      "main": [
+        [
+          {
+            "node": "Readback Allowed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Readback Allowed": {
+      "main": [
+        [
+          {
+            "node": "Prepare Readback",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Return Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Readback": {
+      "main": [
+        [
+          {
+            "node": "Read Draft By ID",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Draft By ID": {
+      "main": [
+        [
+          {
+            "node": "Verify Draft",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify Draft": {
+      "main": [
+        [
+          {
+            "node": "Return Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveDataSuccessExecution": "none",
+    "saveDataErrorExecution": "none",
+    "saveManualExecutions": false,
+    "executionTimeout": 120
+  }
+}

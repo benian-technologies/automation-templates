@@ -4,7 +4,11 @@ Reusable n8n workflows for scheduling, support, content and operations. Each inc
 
 ## See a workflow in action
 
+Browse the [searchable automation catalog](https://benian-technologies.github.io/automation-templates/) to compare inputs, outputs and installation needs, then inspect four reproducible fictional-data demonstrations.
+
 Start with the [short, runnable walkthroughs](walkthroughs/README.md): an approved-answer chatbot, cited content review, restartable source collection and business-hours decisions. Each runs with fictional data and shows both a useful result and a boundary. No provider credentials are needed for these demonstrations.
+
+The [implementation field notes](field-notes/README.md) go deeper into FAQ abstention, misleading claims with genuine quotes, and collection budgets that survive restarts. Each includes executable fictional examples and the decisions still needed for a real installation.
 
 ## Download or use the n8n listing
 
@@ -72,6 +76,8 @@ node tests/error-to-linear.cjs
 The collector's guide includes its offline test command. Keep runtime databases, credentials and real inputs outside this repository.
 
 Current publication: 14 workflow exports, their setup guides and four runnable walkthroughs. The walkthroughs demonstrate existing workflows; they are not additional templates. See [validation and limitations](VALIDATION.md) for what was actually exercised.
+
+The [catalog source and rebuild instructions](docs/README.md) explain how its static entries and proof data are generated from these exports. Search and browsing need no account or provider credentials.
 
 ## Implementation help
 

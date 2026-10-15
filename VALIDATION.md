@@ -2,6 +2,14 @@
 
 Validated on October 14, 2026. This library contains 14 inactive workflow exports. Validation uses fictional inputs and isolated systems.
 
+## Runnable walkthroughs
+
+The four [walkthroughs](walkthroughs/README.md) use fictional inputs. Their JavaScript runner reads the exported Code nodes directly: four FAQ cases, three editorial cases and nine schedule cases. Configuration enablement and the schedule clock are replaced only in the local harness; model responses are fixtures. These commands do not execute n8n's complete graph or call a provider.
+
+The collector walkthrough runs its real CLI in separate processes against one temporary SQLite file, checks discovery replay, completes the offline queue, verifies three page URLs/two unique bodies/four requests and verifies an unchanged terminal replay. It uses the built-in fixed transport, then removes its state. It does not run the n8n controller or crawl a public source.
+
+These walkthrough checks supplement the earlier native validation below. No workflow export changed for their publication.
+
 ## What was checked
 
 | Area | Evidence and boundary |

@@ -19,3 +19,7 @@ The result includes `status`, `office_is_open`, local date/day/time, time zone, 
 ## Validation
 
 The exact JSON imported successfully into an isolated n8n 2.41.6 container. Earlier local synthetic checks covered schedule logic; a live authenticated webhook integration has not been tested. No external provider is required. Execution retention is disabled in the export; choose settings appropriate to your deployment.
+
+## Related implementation
+
+Try the [runnable fictional-data walkthrough](walkthroughs/office-hours-status.md) before connecting your accounts. For adapting this pattern to your process, see [Benian's n8n implementation approach](https://benian.ai/integrations/n8n-automation?utm_source=github&utm_medium=referral&utm_campaign=automation_templates&utm_content=office_hours_status_guide).

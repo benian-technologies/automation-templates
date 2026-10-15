@@ -22,3 +22,7 @@ The HTTP Request credential selector is deliberately unbound. The export contain
 Synthetic logic, MIME-body and workflow graph checks pass locally. The exact JSON imported successfully into an isolated n8n 2.41.6 container. Google OAuth and a provider round trip have not been tested.
 
 The upload uses Google's documented [multipart upload and import](https://developers.google.com/workspace/drive/api/guides/manage-uploads) with a Google Docs target MIME type. See [n8n HTTP Request](https://docs.n8n.io/integrations/builtin/core-nodes/n8n-nodes-base.httprequest/) for credential setup. The current [Markdown node definition](https://github.com/n8n-io/n8n/blob/master/packages/nodes-base/nodes/Markdown/Markdown.node.ts) supports the chosen conversion settings.
+
+## Related implementation
+
+For adapting this pattern to your process, see [Benian's n8n implementation approach](https://benian.ai/integrations/n8n-automation?utm_source=github&utm_medium=referral&utm_campaign=automation_templates&utm_content=markdown_to_google_docs_guide).

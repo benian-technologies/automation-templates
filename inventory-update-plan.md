@@ -19,3 +19,7 @@ Missing source or catalog rows, untracked stock, unapproved changes and changes 
 ## Validation
 
 Synthetic logic and graph checks pass locally. The exact JSON imported successfully into an isolated n8n 2.41.6 container and the supplied synthetic example executed successfully through all five executable nodes. No customer snapshots or provider connections were used. Execution retention is disabled in the export; apply your own retention rules before handling production data.
+
+## Related implementation
+
+For adapting this pattern to your process, see [Benian's data cleansing approach](https://benian.ai/automations/data-cleansing?utm_source=github&utm_medium=referral&utm_campaign=automation_templates&utm_content=inventory_update_plan_guide).

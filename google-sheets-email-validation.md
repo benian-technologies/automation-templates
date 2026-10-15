@@ -21,3 +21,7 @@ The result reconciles provider-returned addresses against the exact requested se
 Synthetic checks cover deduplication, input limits, invalid syntax, provider errors, reordered responses and incomplete result sets. The exact JSON imported successfully into an isolated n8n 2.41.6 container. A live Sheets/ZeroBounce execution has not been performed. Execution retention is disabled in the export; choose retention settings appropriate to the input data.
 
 Uses [Google Sheets values.get](https://developers.google.com/workspace/sheets/api/reference/rest/v4/spreadsheets.values/get), [ZeroBounce single-email validation](https://zerobounce.net/docs/email-validation-api-quickstart/v2-validate-emails) and [n8n HTTP Request credentials](https://docs.n8n.io/integrations/builtin/credentials/httprequest/). The exported endpoint is ZeroBounce's default region; choose its documented regional endpoint if required for your data handling.
+
+## Related implementation
+
+For adapting this pattern to your process, see [Benian's data cleansing approach](https://benian.ai/automations/data-cleansing?utm_source=github&utm_medium=referral&utm_campaign=automation_templates&utm_content=google_sheets_email_validation_guide).

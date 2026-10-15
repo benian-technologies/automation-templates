@@ -32,3 +32,7 @@ A repeated successful request may return busy because its event now occupies the
 ## Validation
 
 The exact JSON imported successfully into an isolated n8n 2.41.6 container. Local synthetic checks covered validation and response handling. Google OAuth, live event creation and the authenticated webhook have not been tested against a provider. Execution retention is disabled in the export.
+
+## Related implementation
+
+For adapting this pattern to your process, see [Benian's n8n implementation approach](https://benian.ai/integrations/n8n-automation?utm_source=github&utm_medium=referral&utm_campaign=automation_templates&utm_content=calendar_booking_guide).

@@ -6,6 +6,12 @@ Reusable n8n workflows for scheduling, support, content and operations. Each inc
 
 Start with the [short, runnable walkthroughs](walkthroughs/README.md): an approved-answer chatbot, cited content review, restartable source collection and business-hours decisions. Each runs with fictional data and shows both a useful result and a boundary. No provider credentials are needed for these demonstrations.
 
+## Download or use the n8n listing
+
+Download the ZIP from the [latest release](https://github.com/benian-technologies/automation-templates/releases/latest) for the complete library, setup guides and demonstrations. Each release includes a checksum file. Unzip it, choose one workflow and import its JSON into a new inactive workflow; the ZIP itself is not an n8n import file.
+
+The [confirmed appointment-booking template is also published in n8n's template catalog](https://n8n.io/workflows/20494-book-confirmed-webhook-appointments-in-google-calendar-using-a-post-endpoint/). See [Benian's n8n creator profile](https://n8n.io/creators/emre/) for provider-published listings. Availability in this GitHub library does not imply n8n has reviewed or approved every export.
+
 ## Support and scheduling
 
 | Workflow | Result | Setup |

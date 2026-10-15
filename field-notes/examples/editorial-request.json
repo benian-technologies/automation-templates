@@ -1,0 +1,13 @@
+{
+  "requestId": "field-note-editorial-001",
+  "topic": "Make implementation review easier to follow",
+  "sourceUseApproved": true,
+  "sources": [
+    {
+      "id": "fictional-review-guide",
+      "title": "Fictional implementation review guide",
+      "url": "https://example.com/review-guide",
+      "excerpt": "Assign a named reviewer before implementation begins. Record changes to the agreed scope. The reviewer checks the revised work before release."
+    }
+  ]
+}

@@ -10,6 +10,8 @@ Start with the [short, runnable walkthroughs](walkthroughs/README.md): an approv
 
 The [implementation field notes](field-notes/README.md) go deeper into FAQ abstention, misleading claims with genuine quotes, and collection budgets that survive restarts. Each includes executable fictional examples and the decisions still needed for a real installation.
 
+Before connecting real accounts, use the [five-page readiness worksheet](https://benian-technologies.github.io/automation-templates/resources/benian-ai-workflow-readiness-worksheet.pdf) to agree the job, permitted actions, failure tests and operating owner. Print it or annotate the PDF; the blanks are not interactive form fields.
+
 ## Download or use the n8n listing
 
 Download the ZIP from the [latest release](https://github.com/benian-technologies/automation-templates/releases/latest) for the complete library, setup guides and demonstrations. Each release includes a checksum file. Unzip it, choose one workflow and import its JSON into a new inactive workflow; the ZIP itself is not an n8n import file.

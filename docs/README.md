@@ -21,3 +21,5 @@ Open `http://127.0.0.1:8842/`. The build executes the existing fictional-data de
 Use the public repository's free GitHub Pages route, with `main` and `/docs` as the publishing source. No custom domain is required. Inspect the deployed build and normal public URL before claiming publication. Every linked field note must be present on main before deployment.
 
 The existing downloadable release remains a separately versioned package. Publishing this catalog does not change workflow logic, activate an instance or add provider-approved templates.
+
+The printable five-page [readiness worksheet](resources/benian-ai-workflow-readiness-worksheet.pdf) helps a process owner and implementer agree limits, acceptance tests and handover. Its blanks are for printing or annotation, not interactive form fields. The catalog build preserves this separately reviewed PDF in `resources/`; it does not regenerate it.

@@ -45,3 +45,7 @@ HTTP 400 means invalid input, 503 means disabled setup and 502 means unverified 
 Synthetic exact-Code and whole-graph tests cover valid packets, duplicate sources, unsafe URL schemes, missing approval, excessive input, forged quotes, invented source IDs, provider errors and malformed/truncated outputs. No live model, source collector, editorial storage or publication integration has been tested by this package. Native n8n 2.41.6 also passed three fixture-graph cases: valid packet, forged-quote rejection and missing-approval rejection. The imported executable graph and settings were unchanged; an ephemeral workflow ID was added for the CLI. Execution tests enabled configuration and replaced ingress, provider calls and the final webhook response with synthetic fixtures. Actual processing Code and If branches ran in the native engine. The test container had no network. These checks do not establish live-provider acceptance.
 
 References: [Claude Messages API](https://platform.claude.com/docs/en/api/messages/create), [n8n HTTP Request](https://docs.n8n.io/integrations/builtin/core-nodes/n8n-nodes-base.httprequest/).
+
+## Related implementation
+
+Try the [runnable fictional-data walkthrough](walkthroughs/cited-editorial-packet.md) before connecting your accounts. For adapting this pattern to your process, see [Benian's AI agents and workflows approach](https://benian.ai/compare/ai-agents-vs-workflows?utm_source=github&utm_medium=referral&utm_campaign=automation_templates&utm_content=cited_editorial_packet_guide).

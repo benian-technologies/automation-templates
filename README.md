@@ -2,6 +2,10 @@
 
 Reusable n8n workflows for scheduling, support, content and operations. Each includes a setup guide, explicit failure behavior and fictional examples. The public-source collector also includes its Python service.
 
+## See a workflow in action
+
+Start with the [short, runnable walkthroughs](walkthroughs/README.md): an approved-answer chatbot, cited content review, restartable source collection and business-hours decisions. Each runs with fictional data and shows both a useful result and a boundary. No provider credentials are needed for these demonstrations.
+
 ## Support and scheduling
 
 | Workflow | Result | Setup |
@@ -60,6 +64,8 @@ node tests/error-to-linear.cjs
 ```
 
 The collector's guide includes its offline test command. Keep runtime databases, credentials and real inputs outside this repository.
+
+Current publication: 14 workflow exports, their setup guides and four runnable walkthroughs. The walkthroughs demonstrate existing workflows; they are not additional templates. See [validation and limitations](VALIDATION.md) for what was actually exercised.
 
 ## Implementation help
 

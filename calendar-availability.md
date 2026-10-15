@@ -28,3 +28,7 @@ Change the webhook path and calendar. Add your own scheduling rules before the a
 ## Additional Info
 
 HTTP 200 returns status available or busy, a boolean available, and the normalized UTC start and end. HTTP 400 returns invalid_request and validation errors. HTTP 502 returns unavailable without claiming that the interval is free. This is a snapshot for one interval. It neither generates a slot catalogue nor holds or creates an appointment. Calendar state can change after the check. Successful, error, and manual execution saving are disabled in the export; review your instance logging and retention before using real requests. Prepared by Benian Technologies: https://benian.ai/integrations/n8n-automation
+
+## Related implementation
+
+For adapting this pattern to your process, see [Benian's n8n implementation approach](https://benian.ai/integrations/n8n-automation?utm_source=github&utm_medium=referral&utm_campaign=automation_templates&utm_content=calendar_availability_guide).

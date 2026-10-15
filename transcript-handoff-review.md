@@ -39,3 +39,7 @@ HTTP 400 means invalid input, 503 means disabled setup and 502 means the provide
 Exact-Code and whole-graph tests use synthetic transcripts and model responses. Cases include unsupported participants, repeated segment IDs, missing processing approval, forged quotes, invented owners/dates, null values and malformed/provider error responses. Live model quality and participant acceptance remain untested. Native n8n 2.41.6 also passed three fixture-graph cases: valid handoff, unknown-owner rejection and partial-name rejection. The imported executable graph and settings were unchanged; an ephemeral workflow ID was added for the CLI. Execution tests enabled configuration and replaced ingress, provider calls and the final webhook response with synthetic fixtures. Actual processing Code and If branches ran in the native engine. The test container had no network. These checks do not establish live-provider acceptance.
 
 References: [Claude Messages API](https://platform.claude.com/docs/en/api/messages/create), [n8n Webhook](https://docs.n8n.io/integrations/builtin/core-nodes/n8n-nodes-base.webhook/).
+
+## Related implementation
+
+For adapting this pattern to your process, see [Benian's n8n implementation approach](https://benian.ai/integrations/n8n-automation?utm_source=github&utm_medium=referral&utm_campaign=automation_templates&utm_content=transcript_handoff_review_guide).

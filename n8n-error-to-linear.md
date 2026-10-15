@@ -25,3 +25,7 @@ There are no automatic write retries. If creation times out or readback fails, i
 Focused synthetic tests cover retry identity, trigger failures, rejected configuration, missing identity, existing and duplicate issues, GraphQL errors, preview, creation and mismatched readback. No authenticated Linear issue has been created by the template during preparation. Import and native engine checks are listed in the repository validation record.
 
 References: [Linear GraphQL](https://linear.app/developers/graphql), [Linear filtering](https://linear.app/developers/filtering), [n8n Error Trigger](https://docs.n8n.io/integrations/builtin/core-nodes/n8n-nodes-base.errortrigger/).
+
+## Related implementation
+
+For adapting this pattern to your process, see [Benian's n8n implementation approach](https://benian.ai/integrations/n8n-automation?utm_source=github&utm_medium=referral&utm_campaign=automation_templates&utm_content=n8n_error_to_linear_guide).

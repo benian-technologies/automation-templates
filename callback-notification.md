@@ -28,3 +28,7 @@ Set the receiving staff address and email subject. Adapt the plain-text message 
 ## Additional Info
 
 The name is required and limited to 120 characters. Phone accepts common formatting characters and requires 7 to 15 digits; this is a format check, not proof that a number is reachable. The message is required and limited to 2,000 characters. HTTP 202 returns accepted_by_mail_provider. It does not confirm delivery, reading, or a completed callback. HTTP 400 returns invalid_request and validation errors. HTTP 502 means acceptance is unconfirmed: inspect the sender and staff inbox before retrying, because the first attempt may have sent. The template has no persistent deduplication, makes no call, and sends no customer receipt. Execution saving is disabled in the export, but Gmail stores sent messages and your instance may keep other logs. Review data handling and retention before using real caller information. Prepared by Benian Technologies: https://benian.ai/integrations/n8n-automation
+
+## Related implementation
+
+For adapting this pattern to your process, see [Benian's n8n implementation approach](https://benian.ai/integrations/n8n-automation?utm_source=github&utm_medium=referral&utm_campaign=automation_templates&utm_content=callback_notification_guide).

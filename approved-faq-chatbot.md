@@ -34,3 +34,7 @@ Successful, failed and manual execution payload saving is disabled in the export
 The delivered package has exact-Code and graph tests with synthetic provider responses, including disabled configuration, explicit handoff, invented article IDs, duplicate IDs, provider errors and strict output rejection. Live Anthropic quality, latency and credentials have not been tested. Native n8n 2.41.6 also passed four fixture-graph cases: answered FAQ, explicit handoff, unknown answer and provider failure. The imported executable graph and settings were unchanged; an ephemeral workflow ID was added for the CLI. Execution tests enabled configuration and replaced ingress, provider calls and the final webhook response with synthetic fixtures. Actual processing Code and If branches ran in the native engine. The test container had no network. These checks do not establish live-provider acceptance.
 
 References: [n8n Webhook](https://docs.n8n.io/integrations/builtin/core-nodes/n8n-nodes-base.webhook/), [HTTP Request](https://docs.n8n.io/integrations/builtin/core-nodes/n8n-nodes-base.httprequest/), [Claude Messages API](https://platform.claude.com/docs/en/api/messages/create).
+
+## Related implementation
+
+Try the [runnable fictional-data walkthrough](walkthroughs/approved-faq-chatbot.md) before connecting your accounts. For adapting this pattern to your process, see [Benian's chatbot implementation approach](https://benian.ai/industries/enterprise/ai-chatbot?utm_source=github&utm_medium=referral&utm_campaign=automation_templates&utm_content=approved_faq_chatbot_guide).

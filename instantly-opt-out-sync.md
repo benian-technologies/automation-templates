@@ -21,3 +21,7 @@ Preview output contains the missing-address list and counts. Applied output cont
 Local synthetic checks cover pagination truncation, cursor loops, deduplication, domain coverage, change caps and create/readback mismatches. The exact JSON imported successfully into an isolated n8n 2.41.6 container. The workflow has not been executed against Instantly. Execution retention is disabled in the export. API credentials remain unbound.
 
 Uses the official [list leads](https://developer.instantly.ai/api-reference/lead/list-leads), [list block-list entries](https://developer.instantly.ai/api-reference/blocklistentry/list-block-list-entry), [create entry](https://developer.instantly.ai/api-reference/blocklistentry/create-block-list-entry) and [get entry](https://developer.instantly.ai/api-reference/blocklistentry/get-block-list-entry) contracts. Pagination uses the built-in [n8n HTTP Request node](https://docs.n8n.io/integrations/builtin/core-nodes/n8n-nodes-base.httprequest/).
+
+## Related implementation
+
+For adapting this pattern to your process, see [Benian's n8n implementation approach](https://benian.ai/integrations/n8n-automation?utm_source=github&utm_medium=referral&utm_campaign=automation_templates&utm_content=instantly_opt_out_sync_guide).

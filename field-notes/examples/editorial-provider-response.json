@@ -1,0 +1,16 @@
+{
+  "headline": "Give implementation review an owner",
+  "angle": "Make the review responsibility explicit before work starts.",
+  "sections": [
+    {
+      "heading": "Name the reviewer",
+      "points": [
+        {
+          "claim": "Assign a reviewer before implementation starts.",
+          "sourceId": "fictional-review-guide",
+          "evidenceQuote": "Assign a named reviewer before implementation begins."
+        }
+      ]
+    }
+  ]
+}

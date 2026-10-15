@@ -173,6 +173,10 @@ a.button:hover,button.button:hover {
   font-size:1.09rem;
   margin:0
 }
+.intro p.worksheet-prompt {
+  margin-top:16px;
+  font-size:.94rem
+}
 .intro-note {
   width:225px;
   flex:none;

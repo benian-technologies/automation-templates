@@ -169,7 +169,7 @@ def main():
 <section class="field-notes" aria-labelledby="field-notes-title"><div class="reading-heading"><h2 id="field-notes-title">Read the implementation decisions.</h2><p>Three field notes with executable fictional examples, observed failures and the work still required for a real installation.</p></div><ul>{reading_links}</ul></section>
 <footer class="library-footer"><p>These are reusable starting points with fictional examples. Synthetic checks are separate from live provider acceptance, production delivery and business results. Read the <a href="{REPO}/blob/main/VALIDATION.md">validation boundaries</a> before connecting your accounts. GitHub publication does not mean every template is approved by n8n.</p><a href="https://n8n.io/creators/emre/">Benian on n8n</a></footer><p class="sr-only" id="copy-status" role="status"></p></div></body></html>
 '''
-    (DOCS / 'index.html').write_text(document)
+    (DOCS / 'index.html').write_text('\n'.join(line.rstrip() for line in document.splitlines()) + '\n')
     (DOCS / 'catalog.json').write_text(json.dumps(content, indent=2) + '\n')
     (DOCS / 'proofs.json').write_text(json.dumps(proofs, indent=2) + '\n')
     (DOCS / '.nojekyll').write_text('')

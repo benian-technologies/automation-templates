@@ -247,7 +247,7 @@
           <div class="actions"><a class="button" href="https://github.com/benian-technologies/automation-templates/blob/main/calendar-availability.md">Read setup guide</a><a class="button secondary" href="https://raw.githubusercontent.com/benian-technologies/automation-templates/main/calendar-availability.json">Open workflow JSON</a><a class="text-link" href="https://github.com/benian-technologies/automation-templates/blob/main/calendar-availability.json">View source</a></div></header>
           <dl class="recipe"><div><dt>Input</dt><dd>A requested start and end time with explicit timezone offsets.</dd></div><div><dt>Checks</dt><dd>Validate the interval and ask Google Calendar whether it is free.</dd></div><div><dt>Result</dt><dd>Available, busy or an explicit unverified-provider response.</dd></div></dl>
           <div class="requirements"><span>Installation needs</span><ul><li>n8n</li><li>Google Calendar</li><li>Webhook credential</li></ul></div>
-          
+
           <div class="detail-bottom"><div><h3>Before you connect real data</h3><p>Availability is a snapshot. This workflow does not reserve a slot or prevent a later competing booking.</p></div><nav class="next-links" aria-label="More about Appointment availability"><a href="https://benian.ai/integrations/n8n-automation?utm_source=github_pages&amp;utm_medium=referral&amp;utm_campaign=automation_templates&amp;utm_content=calendar_availability">Implementation help</a></nav></div>
           <footer class="workflow-meta"><span>Imports inactive. Credentials are not included.</span><span>8 processing nodes</span></footer>
         </article><article class="template-detail" id="calendar-booking" aria-labelledby="title-calendar-booking">
@@ -255,7 +255,7 @@
           <div class="actions"><a class="button" href="https://github.com/benian-technologies/automation-templates/blob/main/calendar-booking.md">Read setup guide</a><a class="button secondary" href="https://raw.githubusercontent.com/benian-technologies/automation-templates/main/calendar-booking.json">Open workflow JSON</a><a class="text-link" href="https://github.com/benian-technologies/automation-templates/blob/main/calendar-booking.json">View source</a></div></header>
           <dl class="recipe"><div><dt>Input</dt><dd>A confirmed appointment, time interval and stable request ID.</dd></div><div><dt>Checks</dt><dd>Validate confirmation, check availability and verify the returned event.</dd></div><div><dt>Result</dt><dd>A verified event identity or a specific invalid, busy or unconfirmed response.</dd></div></dl>
           <div class="requirements"><span>Installation needs</span><ul><li>n8n</li><li>Google Calendar</li><li>Webhook credential</li></ul></div>
-          
+
           <div class="detail-bottom"><div><h3>Before you connect real data</h3><p>Lookup and creation are separate operations. Serialize competing writers and reconcile uncertain results before retrying.</p></div><nav class="next-links" aria-label="More about Confirmed appointment booking"><a href="https://n8n.io/workflows/20494-book-confirmed-webhook-appointments-in-google-calendar-using-a-post-endpoint/">View on n8n</a><a href="https://benian.ai/integrations/n8n-automation?utm_source=github_pages&amp;utm_medium=referral&amp;utm_campaign=automation_templates&amp;utm_content=calendar_booking">Implementation help</a></nav></div>
           <footer class="workflow-meta"><span>Imports inactive. Credentials are not included.</span><span>13 processing nodes</span></footer>
         </article><article class="template-detail" id="callback-notification" aria-labelledby="title-callback-notification">
@@ -263,7 +263,7 @@
           <div class="actions"><a class="button" href="https://github.com/benian-technologies/automation-templates/blob/main/callback-notification.md">Read setup guide</a><a class="button secondary" href="https://raw.githubusercontent.com/benian-technologies/automation-templates/main/callback-notification.json">Open workflow JSON</a><a class="text-link" href="https://github.com/benian-technologies/automation-templates/blob/main/callback-notification.json">View source</a></div></header>
           <dl class="recipe"><div><dt>Input</dt><dd>A validated callback request and configured staff inbox.</dd></div><div><dt>Checks</dt><dd>Validate the request, send through Gmail and inspect the receipt.</dd></div><div><dt>Result</dt><dd>Mail-provider acceptance or an unconfirmed-send response.</dd></div></dl>
           <div class="requirements"><span>Installation needs</span><ul><li>n8n</li><li>Gmail</li><li>Webhook credential</li></ul></div>
-          
+
           <div class="detail-bottom"><div><h3>Before you connect real data</h3><p>Provider acceptance is not inbox delivery, a completed callback or a booked appointment.</p></div><nav class="next-links" aria-label="More about Callback notification"><a href="https://benian.ai/integrations/n8n-automation?utm_source=github_pages&amp;utm_medium=referral&amp;utm_campaign=automation_templates&amp;utm_content=callback_notification">Implementation help</a></nav></div>
           <footer class="workflow-meta"><span>Imports inactive. Credentials are not included.</span><span>8 processing nodes</span></footer>
         </article><article class="template-detail" id="cited-editorial-packet" aria-labelledby="title-cited-editorial-packet">
@@ -337,7 +337,7 @@
           <div class="actions"><a class="button" href="https://github.com/benian-technologies/automation-templates/blob/main/approved-wordpress-draft.md">Read setup guide</a><a class="button secondary" href="https://raw.githubusercontent.com/benian-technologies/automation-templates/main/approved-wordpress-draft.json">Open workflow JSON</a><a class="text-link" href="https://github.com/benian-technologies/automation-templates/blob/main/approved-wordpress-draft.json">View source</a></div></header>
           <dl class="recipe"><div><dt>Input</dt><dd>Explicit approval of the exact title, paragraphs and slug.</dd></div><div><dt>Checks</dt><dd>Check the slug, create a missing draft and verify the saved post.</dd></div><div><dt>Result</dt><dd>A verified draft identity without publishing the article.</dd></div></dl>
           <div class="requirements"><span>Installation needs</span><ul><li>n8n</li><li>WordPress</li><li>Authenticated approval</li></ul></div>
-          
+
           <div class="detail-bottom"><div><h3>Before you connect real data</h3><p>Serial lookup is not an atomic lock. Reconcile uncertain writes and coordinate simultaneous requests for the same slug.</p></div><nav class="next-links" aria-label="More about Approved WordPress draft"><a href="https://benian.ai/integrations/n8n-automation?utm_source=github_pages&amp;utm_medium=referral&amp;utm_campaign=automation_templates&amp;utm_content=approved_wordpress_draft">Implementation help</a></nav></div>
           <footer class="workflow-meta"><span>Imports inactive. Credentials are not included.</span><span>13 processing nodes</span></footer>
         </article><article class="template-detail" id="transcript-handoff-review" aria-labelledby="title-transcript-handoff-review">
@@ -345,7 +345,7 @@
           <div class="actions"><a class="button" href="https://github.com/benian-technologies/automation-templates/blob/main/transcript-handoff-review.md">Read setup guide</a><a class="button secondary" href="https://raw.githubusercontent.com/benian-technologies/automation-templates/main/transcript-handoff-review.json">Open workflow JSON</a><a class="text-link" href="https://github.com/benian-technologies/automation-templates/blob/main/transcript-handoff-review.json">View source</a></div></header>
           <dl class="recipe"><div><dt>Input</dt><dd>An approved transcript and its source reference.</dd></div><div><dt>Checks</dt><dd>Validate structured model output and supporting evidence quotations.</dd></div><div><dt>Result</dt><dd>A review packet, not automatically assigned or completed tasks.</dd></div></dl>
           <div class="requirements"><span>Installation needs</span><ul><li>n8n</li><li>Anthropic API</li><li>Approved transcript</li></ul></div>
-          
+
           <div class="detail-bottom"><div><h3>Before you connect real data</h3><p>Participants still confirm speaker attribution, context and commitments. Do not send confidential transcripts without permission.</p></div><nav class="next-links" aria-label="More about Transcript handoff review"><a href="https://benian.ai/integrations/n8n-automation?utm_source=github_pages&amp;utm_medium=referral&amp;utm_campaign=automation_templates&amp;utm_content=transcript_handoff_review">Implementation help</a></nav></div>
           <footer class="workflow-meta"><span>Imports inactive. Credentials are not included.</span><span>6 processing nodes</span></footer>
         </article><article class="template-detail" id="markdown-to-google-docs" aria-labelledby="title-markdown-to-google-docs">
@@ -353,7 +353,7 @@
           <div class="actions"><a class="button" href="https://github.com/benian-technologies/automation-templates/blob/main/markdown-to-google-docs.md">Read setup guide</a><a class="button secondary" href="https://raw.githubusercontent.com/benian-technologies/automation-templates/main/markdown-to-google-docs.json">Open workflow JSON</a><a class="text-link" href="https://github.com/benian-technologies/automation-templates/blob/main/markdown-to-google-docs.json">View source</a></div></header>
           <dl class="recipe"><div><dt>Input</dt><dd>A document title and Markdown content.</dd></div><div><dt>Checks</dt><dd>Validate the document, convert formatting and read back the created file.</dd></div><div><dt>Result</dt><dd>A Google Docs link for the newly created document.</dd></div></dl>
           <div class="requirements"><span>Installation needs</span><ul><li>n8n</li><li>Google Drive credentials</li></ul></div>
-          
+
           <div class="detail-bottom"><div><h3>Before you connect real data</h3><p>Test formatting and sharing in your own account. A returned file identity does not prove every layout detail rendered correctly.</p></div><nav class="next-links" aria-label="More about Markdown to Google Docs"><a href="https://benian.ai/integrations/n8n-automation?utm_source=github_pages&amp;utm_medium=referral&amp;utm_campaign=automation_templates&amp;utm_content=markdown_to_google_docs">Implementation help</a></nav></div>
           <footer class="workflow-meta"><span>Imports inactive. Credentials are not included.</span><span>9 processing nodes</span></footer>
         </article><article class="template-detail" id="public-source-collector" aria-labelledby="title-public-source-collector">
@@ -405,7 +405,7 @@
           <div class="actions"><a class="button" href="https://github.com/benian-technologies/automation-templates/blob/main/n8n-error-to-linear.md">Read setup guide</a><a class="button secondary" href="https://raw.githubusercontent.com/benian-technologies/automation-templates/main/n8n-error-to-linear.json">Open workflow JSON</a><a class="text-link" href="https://github.com/benian-technologies/automation-templates/blob/main/n8n-error-to-linear.json">View source</a></div></header>
           <dl class="recipe"><div><dt>Input</dt><dd>An n8n failure event and configured recovery destination.</dd></div><div><dt>Checks</dt><dd>Build a safe reference, search for an existing issue and verify any creation.</dd></div><div><dt>Result</dt><dd>A confirmed recovery issue receipt for the operator.</dd></div></dl>
           <div class="requirements"><span>Installation needs</span><ul><li>n8n</li><li>Linear API</li></ul></div>
-          
+
           <div class="detail-bottom"><div><h3>Before you connect real data</h3><p>Serial lookup is not a cross-execution lock. A created issue does not mean the underlying integration has recovered.</p></div><nav class="next-links" aria-label="More about n8n failures to Linear"><a href="https://benian.ai/integrations/n8n-automation?utm_source=github_pages&amp;utm_medium=referral&amp;utm_campaign=automation_templates&amp;utm_content=n8n_error_to_linear">Implementation help</a></nav></div>
           <footer class="workflow-meta"><span>Imports inactive. Credentials are not included.</span><span>10 processing nodes</span></footer>
         </article><article class="template-detail" id="instantly-opt-out-sync" aria-labelledby="title-instantly-opt-out-sync">
@@ -413,7 +413,7 @@
           <div class="actions"><a class="button" href="https://github.com/benian-technologies/automation-templates/blob/main/instantly-opt-out-sync.md">Read setup guide</a><a class="button secondary" href="https://raw.githubusercontent.com/benian-technologies/automation-templates/main/instantly-opt-out-sync.json">Open workflow JSON</a><a class="text-link" href="https://github.com/benian-technologies/automation-templates/blob/main/instantly-opt-out-sync.json">View source</a></div></header>
           <dl class="recipe"><div><dt>Input</dt><dd>The complete unsubscribed-lead and blocked-entry collections.</dd></div><div><dt>Checks</dt><dd>Normalize identities, compare suppression coverage and inspect write receipts.</dd></div><div><dt>Result</dt><dd>A preview or verified missing-block reconciliation.</dd></div></dl>
           <div class="requirements"><span>Installation needs</span><ul><li>n8n</li><li>Instantly API</li></ul></div>
-          
+
           <div class="detail-bottom"><div><h3>Before you connect real data</h3><p>It does not send campaigns. Review provider access, scope and current suppression state before enabling changes.</p></div><nav class="next-links" aria-label="More about Instantly opt-out sync"><a href="https://benian.ai/integrations/n8n-automation?utm_source=github_pages&amp;utm_medium=referral&amp;utm_campaign=automation_templates&amp;utm_content=instantly_opt_out_sync">Implementation help</a></nav></div>
           <footer class="workflow-meta"><span>Imports inactive. Credentials are not included.</span><span>13 processing nodes</span></footer>
         </article><article class="template-detail" id="google-sheets-email-validation" aria-labelledby="title-google-sheets-email-validation">
@@ -421,7 +421,7 @@
           <div class="actions"><a class="button" href="https://github.com/benian-technologies/automation-templates/blob/main/google-sheets-email-validation.md">Read setup guide</a><a class="button secondary" href="https://raw.githubusercontent.com/benian-technologies/automation-templates/main/google-sheets-email-validation.json">Open workflow JSON</a><a class="text-link" href="https://github.com/benian-technologies/automation-templates/blob/main/google-sheets-email-validation.json">View source</a></div></header>
           <dl class="recipe"><div><dt>Input</dt><dd>A selected spreadsheet range and email column.</dd></div><div><dt>Checks</dt><dd>Normalize and deduplicate addresses, then request ZeroBounce validation.</dd></div><div><dt>Result</dt><dd>A reviewable CSV with validation results and reconciled counts.</dd></div></dl>
           <div class="requirements"><span>Installation needs</span><ul><li>n8n</li><li>Google Sheets</li><li>ZeroBounce API</li></ul></div>
-          
+
           <div class="detail-bottom"><div><h3>Before you connect real data</h3><p>Validation uses your provider account and may incur charges. A validated address is not permission to contact someone.</p></div><nav class="next-links" aria-label="More about Google Sheets email validation"><a href="https://benian.ai/automations/data-cleansing?utm_source=github_pages&amp;utm_medium=referral&amp;utm_campaign=automation_templates&amp;utm_content=google_sheets_email_validation">Implementation help</a></nav></div>
           <footer class="workflow-meta"><span>Imports inactive. Credentials are not included.</span><span>7 processing nodes</span></footer>
         </article><article class="template-detail" id="inventory-update-plan" aria-labelledby="title-inventory-update-plan">
@@ -429,7 +429,7 @@
           <div class="actions"><a class="button" href="https://github.com/benian-technologies/automation-templates/blob/main/inventory-update-plan.md">Read setup guide</a><a class="button secondary" href="https://raw.githubusercontent.com/benian-technologies/automation-templates/main/inventory-update-plan.json">Open workflow JSON</a><a class="text-link" href="https://github.com/benian-technologies/automation-templates/blob/main/inventory-update-plan.json">View source</a></div></header>
           <dl class="recipe"><div><dt>Input</dt><dd>Two complete snapshots with compatible product identifiers.</dd></div><div><dt>Checks</dt><dd>Validate completeness and reconcile differences between the snapshots.</dd></div><div><dt>Result</dt><dd>An update-plan CSV for human review, not direct store writes.</dd></div></dl>
           <div class="requirements"><span>Installation needs</span><ul><li>n8n</li><li>Complete inventory snapshots</li></ul></div>
-          
+
           <div class="detail-bottom"><div><h3>Before you connect real data</h3><p>The planner does not infer missing stock from incomplete data or apply changes to a commerce system.</p></div><nav class="next-links" aria-label="More about Inventory update plan"><a href="https://benian.ai/automations/data-cleansing?utm_source=github_pages&amp;utm_medium=referral&amp;utm_campaign=automation_templates&amp;utm_content=inventory_update_plan">Implementation help</a></nav></div>
           <footer class="workflow-meta"><span>Imports inactive. Credentials are not included.</span><span>5 processing nodes</span></footer>
         </article><section id="empty-state" class="empty-state" hidden><h2>No match yet.</h2><p>Try a task such as “calendar” or “content”, or clear the filters to see all 14 workflows.</p><button type="button" class="button" data-reset>Show all workflows</button></section></div></main>

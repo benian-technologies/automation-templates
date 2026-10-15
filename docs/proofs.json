@@ -1,0 +1,333 @@
+{
+  "faq": {
+    "command": "node walkthroughs/run-workflow-demo.cjs faq",
+    "scope": "Actual exported Code in a local harness with fictional provider responses or a fixed clock; not the full n8n graph.",
+    "external_network_calls": false,
+    "workflow_sha256": "a1092871249c2f5ae9356f13060474e0ce38cea81ce7f5f77fc2f25087add603",
+    "runner_sha256": "24c08bbd7dc6ce50776d77d187d6bb6d172b45f21cd4783af16a0ebd9a4635c5",
+    "source_dependencies": {
+      "approved-faq-chatbot.json": "a1092871249c2f5ae9356f13060474e0ce38cea81ce7f5f77fc2f25087add603",
+      "walkthroughs/run-workflow-demo.cjs": "24c08bbd7dc6ce50776d77d187d6bb6d172b45f21cd4783af16a0ebd9a4635c5"
+    },
+    "results": [
+      {
+        "case": "Unconfigured export",
+        "route": "respond",
+        "httpStatus": 503,
+        "result": {
+          "status": "setup_required"
+        }
+      },
+      {
+        "case": "Fictional model selects approved hours",
+        "route": "respond",
+        "httpStatus": 200,
+        "result": {
+          "requestId": "demo-faq-001",
+          "status": "answered_from_approved_faq",
+          "answer": "Our fictional demonstration support team is available Monday through Friday, 09:00 to 17:00 UTC.",
+          "sources": [
+            {
+              "id": "hours",
+              "title": "Support hours",
+              "url": "https://example.com/support"
+            }
+          ],
+          "contactCreated": false
+        }
+      },
+      {
+        "case": "Visitor asks for a person; model is bypassed",
+        "route": "respond",
+        "httpStatus": 200,
+        "result": {
+          "requestId": "demo-faq-001",
+          "status": "human_handoff",
+          "answer": "This needs a person to review it. Please use the support contact shown on the website. This chat has not created a support request.",
+          "sources": [],
+          "contactCreated": false
+        }
+      },
+      {
+        "case": "Fictional model invents an article ID",
+        "route": "respond",
+        "httpStatus": 502,
+        "result": {
+          "status": "unavailable",
+          "message": "The provider response could not be verified. No external action was taken."
+        }
+      }
+    ]
+  },
+  "editorial": {
+    "command": "node walkthroughs/run-workflow-demo.cjs editorial",
+    "scope": "Actual exported Code in a local harness with fictional provider responses or a fixed clock; not the full n8n graph.",
+    "external_network_calls": false,
+    "workflow_sha256": "9e49cf69fdcf8b791f0c2b1f51e11285ed946e75f8ae45a57c2199105ed4c72f",
+    "runner_sha256": "24c08bbd7dc6ce50776d77d187d6bb6d172b45f21cd4783af16a0ebd9a4635c5",
+    "source_dependencies": {
+      "cited-editorial-packet.json": "9e49cf69fdcf8b791f0c2b1f51e11285ed946e75f8ae45a57c2199105ed4c72f",
+      "walkthroughs/run-workflow-demo.cjs": "24c08bbd7dc6ce50776d77d187d6bb6d172b45f21cd4783af16a0ebd9a4635c5"
+    },
+    "results": [
+      {
+        "case": "Exact supplied quote becomes a review packet",
+        "route": "respond",
+        "httpStatus": 200,
+        "result": {
+          "requestId": "demo-editorial-001",
+          "status": "needs_editor_review",
+          "headline": "Give each handoff a reviewer",
+          "angle": "A small checklist for an implementation team.",
+          "sections": [
+            {
+              "heading": "Decide who reviews the work",
+              "points": [
+                {
+                  "claim": "Name a reviewer before implementation.",
+                  "sourceId": "demo-guide",
+                  "sourceUrl": "https://example.com/handoff",
+                  "evidenceQuote": "Assign one reviewer before implementation starts."
+                }
+              ]
+            }
+          ],
+          "reviewText": "Give each handoff a reviewer\n\nA small checklist for an implementation team.\n\nDecide who reviews the work\n- Name a reviewer before implementation.\n  Source: https://example.com/handoff\n  Evidence: Assign one reviewer before implementation starts.\n",
+          "checks": {
+            "sourceIdsKnown": true,
+            "quotesFoundInSuppliedExcerpts": true,
+            "semanticAccuracy": "requires_human_review",
+            "publication": "not_attempted"
+          }
+        }
+      },
+      {
+        "case": "Invented quote is rejected",
+        "route": "respond",
+        "httpStatus": 502,
+        "result": {
+          "status": "unavailable",
+          "message": "The provider response could not be verified. No external action was taken."
+        }
+      },
+      {
+        "case": "Source-use approval is missing; model is bypassed",
+        "route": "respond",
+        "httpStatus": 400,
+        "result": {
+          "status": "invalid_request",
+          "message": "Check the documented input schema. No provider request was made."
+        }
+      }
+    ]
+  },
+  "office": {
+    "command": "node walkthroughs/run-workflow-demo.cjs office",
+    "scope": "Actual exported Code in a local harness with fictional provider responses or a fixed clock; not the full n8n graph.",
+    "external_network_calls": false,
+    "workflow_sha256": "4f1cb21ea8582f1e70317dc04daca4429f0af1d5b4d96064a3b7618430a27fbc",
+    "runner_sha256": "24c08bbd7dc6ce50776d77d187d6bb6d172b45f21cd4783af16a0ebd9a4635c5",
+    "source_dependencies": {
+      "office-hours-status.json": "4f1cb21ea8582f1e70317dc04daca4429f0af1d5b4d96064a3b7618430a27fbc",
+      "walkthroughs/run-workflow-demo.cjs": "24c08bbd7dc6ce50776d77d187d6bb6d172b45f21cd4783af16a0ebd9a4635c5"
+    },
+    "results": [
+      {
+        "case": "One minute before opening",
+        "status": "closed",
+        "office_is_open": false,
+        "local_date": "2026-10-12",
+        "local_day": "Monday",
+        "local_time": "08:59",
+        "time_zone": "America/Chicago",
+        "today_hours": [
+          [
+            "09:00",
+            "12:00"
+          ],
+          [
+            "13:00",
+            "17:00"
+          ]
+        ],
+        "closed_date": false
+      },
+      {
+        "case": "Opening minute is included",
+        "status": "open",
+        "office_is_open": true,
+        "local_date": "2026-10-12",
+        "local_day": "Monday",
+        "local_time": "09:00",
+        "time_zone": "America/Chicago",
+        "today_hours": [
+          [
+            "09:00",
+            "12:00"
+          ],
+          [
+            "13:00",
+            "17:00"
+          ]
+        ],
+        "closed_date": false
+      },
+      {
+        "case": "Lunch break starts",
+        "status": "closed",
+        "office_is_open": false,
+        "local_date": "2026-10-12",
+        "local_day": "Monday",
+        "local_time": "12:00",
+        "time_zone": "America/Chicago",
+        "today_hours": [
+          [
+            "09:00",
+            "12:00"
+          ],
+          [
+            "13:00",
+            "17:00"
+          ]
+        ],
+        "closed_date": false
+      },
+      {
+        "case": "Afternoon interval starts",
+        "status": "open",
+        "office_is_open": true,
+        "local_date": "2026-10-12",
+        "local_day": "Monday",
+        "local_time": "13:00",
+        "time_zone": "America/Chicago",
+        "today_hours": [
+          [
+            "09:00",
+            "12:00"
+          ],
+          [
+            "13:00",
+            "17:00"
+          ]
+        ],
+        "closed_date": false
+      },
+      {
+        "case": "Closing minute is excluded",
+        "status": "closed",
+        "office_is_open": false,
+        "local_date": "2026-10-12",
+        "local_day": "Monday",
+        "local_time": "17:00",
+        "time_zone": "America/Chicago",
+        "today_hours": [
+          [
+            "09:00",
+            "12:00"
+          ],
+          [
+            "13:00",
+            "17:00"
+          ]
+        ],
+        "closed_date": false
+      },
+      {
+        "case": "Date-specific closure overrides hours",
+        "status": "closed",
+        "office_is_open": false,
+        "local_date": "2026-10-12",
+        "local_day": "Monday",
+        "local_time": "09:00",
+        "time_zone": "America/Chicago",
+        "today_hours": [
+          [
+            "09:00",
+            "12:00"
+          ],
+          [
+            "13:00",
+            "17:00"
+          ]
+        ],
+        "closed_date": true
+      },
+      {
+        "case": "Tuesday overnight interval continues on Wednesday",
+        "status": "open",
+        "office_is_open": true,
+        "local_date": "2026-10-14",
+        "local_day": "Wednesday",
+        "local_time": "01:59",
+        "time_zone": "America/Chicago",
+        "today_hours": [],
+        "closed_date": false
+      },
+      {
+        "case": "Overnight closing minute is excluded",
+        "status": "closed",
+        "office_is_open": false,
+        "local_date": "2026-10-14",
+        "local_day": "Wednesday",
+        "local_time": "02:00",
+        "time_zone": "America/Chicago",
+        "today_hours": [],
+        "closed_date": false
+      },
+      {
+        "case": "Previous-date closure suppresses overnight carry",
+        "status": "closed",
+        "office_is_open": false,
+        "local_date": "2026-10-14",
+        "local_day": "Wednesday",
+        "local_time": "01:59",
+        "time_zone": "America/Chicago",
+        "today_hours": [],
+        "closed_date": false
+      }
+    ]
+  },
+  "collector": {
+    "command": "python3 walkthroughs/run-collector-demo.py",
+    "scope": "Actual offline collector CLI with built-in fictional transport; no n8n controller execution.",
+    "external_network_calls": false,
+    "workflow_sha256": "3a5cb19b7ad652c445648566fb4f5fcf7ac9b7cab2767145614f60e529ee8f0b",
+    "runner_sha256": "fccf3d2dade0c9b70c807d53220b838785cc1a79aa7940c0635ff450b2fbabaf",
+    "source_dependencies": {
+      "public-source-collector/workflow.json": "3a5cb19b7ad652c445648566fb4f5fcf7ac9b7cab2767145614f60e529ee8f0b",
+      "walkthroughs/run-collector-demo.py": "fccf3d2dade0c9b70c807d53220b838785cc1a79aa7940c0635ff450b2fbabaf",
+      "public-source-collector/collector.py": "587da59d2bd4b1e604dc4ca931960954a53209127a605cc9c2a224963e39d65d",
+      "public-source-collector/examples/config.demo.json": "5ab2b66052b014ab08e5184943a7069ecdd6bff8f2e62bbe88fda2e56b76259d",
+      "public-source-collector/examples/discovery.demo.json": "9b332c8e614a5d237d28716a3722225c0c39b31bc42c37d0b1d4950640b1b0f0"
+    },
+    "results": [
+      {
+        "accepted": 2,
+        "rejected": 1,
+        "replay": false
+      },
+      {
+        "accepted": 2,
+        "rejected": 1,
+        "replay": true
+      },
+      {
+        "charged_bytes": 457,
+        "continue": false,
+        "frontier": {
+          "blocked": 1,
+          "done": 3
+        },
+        "frontier_truncated": false,
+        "job_id": "public-docs-demo",
+        "mode": "offline_demo",
+        "pages": 3,
+        "reason": null,
+        "requests": 4,
+        "state": "complete",
+        "unique_documents": 2,
+        "wait_seconds": 0
+      }
+    ]
+  }
+}
